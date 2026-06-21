@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Young APP Library</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
 :root {
   --bg:#04060c; --s1:#090d17; --s2:#0f1420; --s3:#151c2c;
@@ -359,6 +361,16 @@ main{flex:1;padding:22px}
         <div class="st" id="stkey"></div>
       </div>
     </div>
+    <div class="sec"><h3>☁️ Firebase 雲端同步</h3>
+      <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px;line-height:1.6">貼上 Firebase 設定即可讓所有裝置即時同步。<br><a href="https://console.firebase.google.com/" target="_blank" style="color:var(--violet2)">前往 Firebase Console 免費建立專案 →</a></p>
+      <div class="field" style="margin-bottom:8px"><label>Firebase Config（貼上 firebaseConfig 物件）</label><textarea id="fb-cfg" rows="6" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}'></textarea></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-p btn-sm" onclick="connectFirebase()">🔗 連線</button>
+        <button class="btn btn-g btn-sm" onclick="disconnectFirebase()">斷線</button>
+        <span class="st" id="fb-st" style="margin:0"></span>
+      </div>
+      <div class="st" id="fb-info" style="margin-top:6px;font-size:.75rem;color:var(--muted)"></div>
+    </div>
     <div class="sec"><h3>資料</h3>
       <div class="prow"><div><div class="prow-l">🧹 移除重複 App</div><div class="prow-d">保留相同 URL 的第一筆</div></div><button class="btn btn-g btn-sm" onclick="dedup()">執行</button></div>
       <div class="st" id="stdd"></div>
@@ -646,6 +658,16 @@ async function claudeCls(n,u,d){
 function openSettings(){
   ['sh1','sh2','sg1','sg2'].forEach(i=>document.getElementById(i).value='');
   ['sth','stg'].forEach(i=>{document.getElementById(i).textContent='';document.getElementById(i).className='st';});
+  // Restore Firebase status display
+  const saved=localStorage.getItem('yal_fb');
+  if(saved&&fbReady){
+    document.getElementById('fb-cfg').value=saved;
+    try{const c=JSON.parse(saved.replace(/([{,]\s*)(\w+)\s*:/g,'$1"$2":'));document.getElementById('fb-info').textContent='專案：'+c.projectId;}catch{}
+    document.getElementById('fb-st').textContent='✅ 已連線';document.getElementById('fb-st').className='st ok';
+  }else if(saved){
+    document.getElementById('fb-cfg').value=saved;
+    document.getElementById('fb-st').textContent='未連線';document.getElementById('fb-st').className='st';
+  }
   document.getElementById('sgp').checked=!!cfg.guestPin;
   document.getElementById('gpinsec').style.display=cfg.guestPin?'':'none';
   document.getElementById('sai').checked=!!cfg.aiEnabled;
@@ -682,6 +704,74 @@ function toast(msg,type='ok'){
   clearTimeout(toastT);toastT=setTimeout(()=>t.className='',2800);
 }
 
+/* FIREBASE SYNC */
+let fbApp=null, fbDb=null, fbUnsub=null, fbReady=false;
+
+function connectFirebase(){
+  const raw=document.getElementById('fb-cfg').value.trim();
+  const st=document.getElementById('fb-st'), info=document.getElementById('fb-info');
+  if(!raw){st.textContent='請貼上 Firebase Config';st.className='st err';return;}
+  let fbCfg;
+  try{
+    // Accept both JS object literal and JSON
+    fbCfg=JSON.parse(raw.replace(/([{,]\s*)(\w+)\s*:/g,'$1"$2":'));
+  }catch{st.textContent='Config 格式錯誤，請貼完整 JSON';st.className='st err';return;}
+  try{
+    if(fbApp){try{fbApp.delete();}catch(e){}}
+    fbApp=firebase.initializeApp(fbCfg,'yal-'+Date.now());
+    fbDb=firebase.firestore(fbApp);
+    localStorage.setItem('yal_fb',raw);
+    fbReady=true;
+    st.textContent='✅ 已連線';st.className='st ok';
+    info.textContent='專案：'+fbCfg.projectId;
+    startSync();
+    toast('Firebase 雲端同步已啟動 ☁️');
+  }catch(e){st.textContent='連線失敗：'+e.message;st.className='st err';}
+}
+
+function disconnectFirebase(){
+  if(fbUnsub){fbUnsub();fbUnsub=null;}
+  if(fbApp){try{fbApp.delete();}catch(e){}}
+  fbApp=null;fbDb=null;fbReady=false;
+  localStorage.removeItem('yal_fb');
+  document.getElementById('fb-st').textContent='已斷線';document.getElementById('fb-st').className='st';
+  document.getElementById('fb-info').textContent='';
+  toast('雲端同步已關閉');
+}
+
+function startSync(){
+  if(!fbDb)return;
+  if(fbUnsub){fbUnsub();}
+  // Real-time listener — updates local state whenever cloud changes
+  fbUnsub=fbDb.collection('yal').doc('apps').onSnapshot(snap=>{
+    if(!snap.exists)return;
+    const cloudApps=snap.data().list||[];
+    localStorage.setItem('yal_apps',JSON.stringify(cloudApps));
+    if(role)render();
+  },err=>console.warn('Firestore listen error:',err));
+}
+
+async function pushToCloud(apps){
+  if(!fbDb||!fbReady)return;
+  try{
+    await fbDb.collection('yal').doc('apps').set({list:apps,updated:Date.now()});
+  }catch(e){console.warn('Firestore write error:',e);}
+}
+
+// Override setApps to also sync
+const _setApps=setApps;
+function setApps(a){
+  localStorage.setItem('yal_apps',JSON.stringify(a));
+  pushToCloud(a);
+}
+
+function initFirebase(){
+  const saved=localStorage.getItem('yal_fb');
+  if(!saved)return;
+  document.getElementById('fb-cfg').value=saved;
+  connectFirebase();
+}
+
 /* SEED */
 function seed(){
   if(getApps().length)return;
@@ -698,7 +788,7 @@ function seed(){
 }
 
 /* INIT */
-loadCfg();seed();
+loadCfg();seed();initFirebase();
 (function init(){
   const saved=localStorage.getItem('yal_role');
   if(saved==='host'||saved==='guest'){
