@@ -6,483 +6,285 @@
 <title>Young APP Library</title>
 <style>
 :root {
-  --bg: #0f1117; --surface: #1a1d2e; --surface2: #252840; --surface3: #2d3250;
-  --accent: #6c63ff; --accent2: #43e97b; --red: #f5576c; --yellow: #ffd700;
-  --blue: #38bdf8; --orange: #fb923c;
-  --text: #e2e8f0; --muted: #8892a4; --border: #2d3250; --radius: 14px;
+  --bg:#0f1117; --s1:#1a1d2e; --s2:#252840; --s3:#2d3250;
+  --accent:#6c63ff; --green:#43e97b; --red:#f5576c; --blue:#38bdf8;
+  --text:#e2e8f0; --muted:#8892a4; --border:#2d3250;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 
-/* ══════════════════════════════════════════
-   LOCK / LANDING SCREEN
-══════════════════════════════════════════ */
-#lockScreen {
-  position: fixed; inset: 0; z-index: 999; overflow-y: auto;
-  background: var(--bg);
-  display: flex; flex-direction: column; align-items: center;
-}
-#lockScreen.hidden { display: none; }
+/* ── LOCK SCREEN ── */
+#lock{position:fixed;inset:0;z-index:999;overflow-y:auto;background:var(--bg);display:flex;flex-direction:column;align-items:center}
+#lock.hide{display:none}
+.hero{width:100%;padding:48px 24px 32px;background:linear-gradient(135deg,#0f1117,#1a1040 50%,#0a1628);position:relative;overflow:hidden;display:flex;justify-content:center}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 40% at 20% 30%,rgba(108,99,255,.22),transparent 70%),radial-gradient(ellipse 50% 35% at 80% 70%,rgba(56,189,248,.16),transparent 70%);pointer-events:none}
+.hero-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:16px;max-width:580px;text-align:center}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-icon{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--blue));display:flex;align-items:center;justify-content:center;font-size:1.7rem;box-shadow:0 8px 24px rgba(108,99,255,.4);animation:float 3.5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.brand-name{font-size:1.7rem;font-weight:900;letter-spacing:-.5px}
+.brand-name span{color:var(--accent)}
+.brand-sub{font-size:.72rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.tagline{font-size:1rem;color:var(--muted);line-height:1.65;max-width:420px}
+.tagline strong{color:var(--text)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);font-size:.76rem;color:var(--muted)}
+.role-section{width:100%;max-width:600px;padding:28px 20px 48px;display:flex;flex-direction:column;align-items:center;gap:16px}
+.role-label{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted)}
+.role-cards{display:flex;gap:14px;width:100%}
+.role-card{flex:1;padding:22px 16px;border-radius:18px;background:var(--s1);border:2px solid var(--border);display:flex;flex-direction:column;gap:12px;cursor:pointer;transition:.2s}
+.role-card.host:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 10px 28px rgba(108,99,255,.2)}
+.role-card.guest:hover{border-color:var(--blue);transform:translateY(-3px);box-shadow:0 10px 28px rgba(56,189,248,.15)}
+.rc-top{display:flex;align-items:center;gap:10px}
+.rc-icon{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+.role-card.host .rc-icon{background:rgba(108,99,255,.18)}
+.role-card.guest .rc-icon{background:rgba(56,189,248,.14)}
+.rc-name{font-size:.98rem;font-weight:800}
+.rc-badge{display:inline-block;font-size:.64rem;font-weight:700;padding:2px 7px;border-radius:99px;margin-top:2px}
+.role-card.host .rc-badge{background:rgba(108,99,255,.2);color:#a89fff}
+.role-card.guest .rc-badge{background:rgba(56,189,248,.15);color:var(--blue)}
+.rc-perms{display:flex;flex-direction:column;gap:5px}
+.rc-perm{font-size:.76rem;color:var(--text)}
+.rc-perm.no{color:var(--muted);opacity:.5;text-decoration:line-through}
+.rc-btn{width:100%;padding:10px;border-radius:10px;border:none;font-size:.85rem;font-weight:700;cursor:pointer;margin-top:4px;transition:.15s}
+.role-card.host .rc-btn{background:var(--accent);color:#fff}
+.role-card.host .rc-btn:hover{background:#7c74ff}
+.role-card.guest .rc-btn{background:rgba(56,189,248,.15);color:var(--blue);border:1px solid rgba(56,189,248,.3)}
+.role-card.guest .rc-btn:hover{background:rgba(56,189,248,.28)}
 
-/* Animated hero background */
-.lock-hero {
-  width: 100%; padding: 52px 24px 36px;
-  display: flex; flex-direction: column; align-items: center; gap: 0;
-  position: relative; overflow: hidden;
-  background: linear-gradient(135deg, #0f1117 0%, #1a1040 50%, #0a1628 100%);
-}
-.lock-hero::before {
-  content: ''; position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse 60% 40% at 20% 30%, rgba(108,99,255,.22) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 35% at 80% 70%, rgba(56,189,248,.16) 0%, transparent 70%);
-  pointer-events: none;
-}
-.lock-hero-inner { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 18px; max-width: 600px; text-align: center; }
+/* PIN */
+#pin-panel{display:none;flex-direction:column;align-items:center;gap:16px;background:var(--s1);border:1px solid var(--border);border-radius:22px;padding:26px 30px;width:90%;max-width:320px;margin:28px auto 48px;box-shadow:0 20px 56px rgba(0,0,0,.4)}
+#pin-panel.show{display:flex}
+.pin-back{align-self:flex-start;background:none;border:none;color:var(--muted);cursor:pointer;font-size:.8rem}
+.pin-back:hover{color:var(--text)}
+.pin-badge{padding:4px 13px;border-radius:99px;font-size:.8rem;font-weight:700}
+.pin-badge.host{background:rgba(108,99,255,.18);color:#a89fff}
+.pin-badge.guest{background:rgba(56,189,248,.15);color:var(--blue)}
+.pin-title{font-size:1rem;font-weight:800;text-align:center}
+.pin-sub{font-size:.78rem;color:var(--muted);text-align:center;margin-top:-8px}
+.pin-dots{display:flex;gap:12px}
+.dot{width:13px;height:13px;border-radius:50%;border:2px solid var(--muted);background:transparent;transition:.15s}
+.dot.on{background:var(--accent);border-color:var(--accent)}
+.dot.on.g{background:var(--blue);border-color:var(--blue)}
+.dot.err{background:var(--red);border-color:var(--red)}
+.dot.ok{background:var(--green);border-color:var(--green)}
+.pin-err{font-size:.76rem;color:var(--red);min-height:18px;text-align:center}
+.numpad{display:grid;grid-template-columns:repeat(3,66px);grid-template-rows:repeat(4,66px);gap:9px}
+.nk{width:66px;height:66px;border-radius:50%;border:none;background:var(--s2);color:var(--text);font-size:1.3rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.12s;user-select:none}
+.nk:hover{background:var(--s3)}
+.nk:active{transform:scale(.9)}
+.nk.empty{background:transparent;cursor:default;pointer-events:none}
+.pin-link{font-size:.74rem;color:var(--muted);cursor:pointer;text-decoration:underline}
+.pin-link:hover{color:var(--accent)}
+.skip-btn{background:none;border:1px dashed var(--border);color:var(--muted);border-radius:8px;padding:7px 16px;cursor:pointer;font-size:.78rem;transition:.15s}
+.skip-btn:hover{border-color:var(--blue);color:var(--blue)}
 
-/* Logo mark */
-.lock-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
-.lock-brand-icon {
-  width: 52px; height: 52px; border-radius: 14px;
-  background: linear-gradient(135deg, var(--accent) 0%, #38bdf8 100%);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.6rem; box-shadow: 0 8px 24px rgba(108,99,255,.45);
-  animation: float 3.5s ease-in-out infinite;
-}
-@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-.lock-brand-text { text-align: left; }
-.lock-brand-title { font-size: 1.6rem; font-weight: 900; letter-spacing: -.5px; line-height: 1; }
-.lock-brand-title span { color: var(--accent); }
-.lock-brand-sub { font-size: .75rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 3px; }
+/* ── APP SHELL ── */
+header{position:sticky;top:0;z-index:100;background:rgba(15,17,23,.93);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:11px 22px;display:flex;align-items:center;gap:12px}
+.logo{font-size:1.25rem;font-weight:900;letter-spacing:-.5px;flex-shrink:0;white-space:nowrap}
+.logo span{color:var(--accent)}
+.search-wrap{flex:1;max-width:340px;position:relative}
+.search-wrap input{width:100%;background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:99px;padding:8px 32px 8px 34px;font-size:.86rem;outline:none;transition:.2s}
+.search-wrap input:focus{border-color:var(--accent)}
+.si{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.4;font-size:.9rem;pointer-events:none}
+#sclear{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:.95rem;display:none;line-height:1}
+.hright{display:flex;align-items:center;gap:8px;margin-left:auto}
+.rpill{padding:4px 11px;border-radius:99px;font-size:.76rem;font-weight:700;flex-shrink:0}
+.rpill.host{background:rgba(108,99,255,.2);color:#a89fff}
+.rpill.guest{background:rgba(56,189,248,.15);color:var(--blue)}
+.btn{padding:7px 15px;border-radius:99px;border:none;cursor:pointer;font-size:.82rem;font-weight:600;transition:.15s}
+.btn-p{background:var(--accent);color:#fff}
+.btn-p:hover{background:#7c74ff}
+.btn-g{background:var(--s2);color:var(--text);border:1px solid var(--border)}
+.btn-g:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm{padding:5px 10px;font-size:.74rem}
+.iBtn{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:var(--s2);color:var(--muted);cursor:pointer;font-size:.82rem;display:flex;align-items:center;justify-content:center;transition:.15s}
+.iBtn:hover{border-color:var(--accent);color:var(--accent)}
+.iBtn.del:hover{border-color:var(--red);color:var(--red)}
+.iBtn.ask{border-color:var(--red) !important;color:var(--red) !important;font-size:.68rem;font-weight:700}
 
-/* Tagline */
-.lock-tagline { font-size: 1.05rem; color: var(--muted); line-height: 1.65; max-width: 420px; }
-.lock-tagline strong { color: var(--text); }
+.layout{display:flex;min-height:calc(100vh - 54px)}
+aside{width:190px;flex-shrink:0;padding:16px 10px;border-right:1px solid var(--border);position:sticky;top:54px;height:calc(100vh - 54px);overflow-y:auto}
+aside h3{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:0 8px;margin-bottom:6px}
+.tag-list{display:flex;flex-direction:column;gap:1px;margin-bottom:16px}
+.ti{display:flex;align-items:center;justify-content:space-between;padding:6px 9px;border-radius:7px;cursor:pointer;font-size:.84rem;transition:.15s}
+.ti:hover{background:var(--s2)}
+.ti.on{background:var(--s3);color:var(--accent);font-weight:600}
+.tc{font-size:.68rem;background:var(--s3);padding:1px 7px;border-radius:99px;color:var(--muted)}
+.ti.on .tc{background:rgba(108,99,255,.2);color:var(--accent)}
+.sort-sel{width:100%;background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:6px 9px;font-size:.82rem;outline:none;cursor:pointer;margin-top:4px}
+main{flex:1;padding:18px 22px}
+.count{font-size:.82rem;color:var(--muted);margin-bottom:14px;text-align:right}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:13px}
+.card{background:var(--s1);border:1.5px solid var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px;transition:.2s}
+.card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 22px rgba(108,99,255,.15)}
+.card-top{display:flex;align-items:flex-start;gap:10px}
+.card-emoji{font-size:1.8rem;line-height:1;flex-shrink:0}
+.card-info{flex:1;min-width:0}
+.card-name{font-size:.92rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-url{font-size:.7rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.card-desc{font-size:.78rem;color:var(--muted);line-height:1.5}
+.card-tags{display:flex;flex-wrap:wrap;gap:4px}
+.ctag{font-size:.68rem;padding:2px 8px;border-radius:99px;background:rgba(108,99,255,.18);color:#a89fff;cursor:pointer;border:none;transition:.15s}
+.ctag:hover{background:rgba(108,99,255,.35)}
+.perms{display:flex;gap:5px;flex-wrap:wrap}
+.pb{font-size:.65rem;padding:2px 7px;border-radius:5px;font-weight:600}
+.pb.pub{background:rgba(67,233,123,.12);color:var(--green)}
+.pb.priv{background:rgba(108,99,255,.18);color:#a89fff}
+.pb.dl{background:rgba(56,189,248,.12);color:var(--blue)}
+.pb.nodl{background:rgba(139,146,164,.1);color:var(--muted)}
+.card-actions{display:flex;gap:5px;margin-top:auto;padding-top:8px;border-top:1px solid var(--border)}
+.launch{flex:1;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px;font-size:.8rem;font-weight:700;cursor:pointer;transition:.15s}
+.launch:hover{background:#7c74ff}
+.dlbtn{padding:7px 9px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--blue);cursor:pointer;font-size:.82rem;transition:.15s}
+.dlbtn:hover{border-color:var(--blue)}
+.empty{text-align:center;padding:70px 20px;color:var(--muted)}
+.empty .big{font-size:3rem;margin-bottom:12px}
 
-/* Feature pills */
-.lock-features { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 4px; }
-.feat-pill {
-  display: flex; align-items: center; gap: 6px;
-  padding: 6px 13px; border-radius: 99px;
-  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
-  font-size: .78rem; color: var(--muted); backdrop-filter: blur(4px);
-}
-.feat-pill .fi { font-size: 1rem; }
+/* MODALS */
+.backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center}
+.backdrop.show{display:flex}
+.modal{background:var(--s1);border:1px solid var(--border);border-radius:20px;padding:24px;width:90%;max-width:460px;max-height:88vh;overflow-y:auto}
+.modal h2{font-size:1rem;font-weight:800;margin-bottom:16px}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.field label{font-size:.76rem;font-weight:700;color:var(--muted)}
+.field input,.field textarea{background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:9px 12px;font-size:.86rem;outline:none;font-family:inherit;transition:.2s}
+.field input:focus,.field textarea:focus{border-color:var(--accent)}
+.field input.ef{border-color:var(--red) !important}
+.field textarea{resize:vertical;min-height:58px}
+.emoji-row{display:flex;flex-wrap:wrap;gap:5px}
+.eo{width:33px;height:33px;border-radius:7px;border:1.5px solid var(--border);background:var(--s2);font-size:1.05rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+.eo:hover,.eo.on{border-color:var(--accent);background:rgba(108,99,255,.15)}
+.tinput-row{display:flex;gap:7px}
+.tinput-row input{flex:1}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.chip{display:flex;align-items:center;gap:3px;font-size:.72rem;padding:2px 8px;border-radius:99px;background:rgba(108,99,255,.2);color:#a89fff}
+.chip button{background:none;border:none;cursor:pointer;color:#a89fff;font-size:.8rem;line-height:1}
+.chip button:hover{color:var(--red)}
+.suggest{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.sg{font-size:.7rem;padding:2px 8px;border-radius:99px;border:1px dashed var(--border);color:var(--muted);cursor:pointer;background:none;transition:.15s}
+.sg:hover{border-color:var(--accent);color:var(--accent)}
+.catgrid{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.cg{font-size:.72rem;padding:4px 9px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--muted);cursor:pointer;transition:.15s}
+.cg:hover{border-color:var(--accent);color:var(--accent)}
+.cg.on{border-color:var(--accent);background:rgba(108,99,255,.2);color:#a89fff;font-weight:600}
+.prow{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)}
+.prow:last-child{border-bottom:none}
+.prow-l{font-size:.84rem}
+.prow-d{font-size:.72rem;color:var(--muted);margin-top:1px}
+.tog{position:relative;width:40px;height:22px;flex-shrink:0}
+.tog input{opacity:0;width:0;height:0;position:absolute}
+.tog-sl{position:absolute;inset:0;background:var(--s3);border-radius:99px;cursor:pointer;transition:.2s}
+.tog-sl::before{content:'';position:absolute;left:3px;top:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.2s}
+.tog input:checked+.tog-sl{background:var(--accent)}
+.tog input:checked+.tog-sl::before{transform:translateX(18px)}
+.mactions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.fetch-row{display:flex;gap:7px}
+.fetch-row input{flex:1}
+.fst{font-size:.72rem;margin-top:3px;min-height:16px}
+.fst.ok{color:var(--green)}
+.fst.er{color:var(--red)}
+.merr{display:none;background:rgba(245,87,108,.1);border:1px solid rgba(245,87,108,.3);border-radius:8px;padding:8px 12px;font-size:.8rem;color:var(--red);margin-bottom:6px}
+.merr.show{display:block}
+.ssec{margin-bottom:18px}
+.ssec h3{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:9px}
+.srow{display:flex;gap:7px;align-items:center}
+.srow input{flex:1;background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:8px 12px;font-size:.84rem;outline:none;font-family:inherit}
+.srow input:focus{border-color:var(--accent)}
+.sst{font-size:.75rem;min-height:17px;margin-top:3px}
+.sst.ok{color:var(--green)}
+.sst.er{color:var(--red)}
 
-/* Role section */
-.lock-role-section {
-  width: 100%; max-width: 620px; padding: 32px 24px 48px;
-  display: flex; flex-direction: column; align-items: center; gap: 20px;
-}
-.lock-role-label { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); }
-
-.role-cards { display: flex; gap: 14px; width: 100%; max-width: 520px; }
-.role-card {
-  flex: 1; padding: 24px 18px; border-radius: 18px;
-  background: var(--surface); border: 2px solid var(--border);
-  display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
-  cursor: pointer; transition: border-color .2s, transform .18s, box-shadow .2s;
-  position: relative; overflow: hidden;
-}
-.role-card::after {
-  content: ''; position: absolute; inset: 0; opacity: 0;
-  transition: opacity .2s; pointer-events: none;
-}
-.role-card.host::after { background: radial-gradient(ellipse at top left, rgba(108,99,255,.12), transparent 70%); }
-.role-card.guest::after { background: radial-gradient(ellipse at top left, rgba(56,189,248,.1), transparent 70%); }
-.role-card:hover::after { opacity: 1; }
-.role-card.host:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: 0 12px 32px rgba(108,99,255,.2); }
-.role-card.guest:hover { border-color: var(--blue); transform: translateY(-4px); box-shadow: 0 12px 32px rgba(56,189,248,.15); }
-
-.role-card-top { display: flex; align-items: center; gap: 12px; }
-.role-icon-wrap {
-  width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0;
-}
-.role-card.host .role-icon-wrap { background: rgba(108,99,255,.18); }
-.role-card.guest .role-icon-wrap { background: rgba(56,189,248,.14); }
-.role-card-titles {}
-.role-name { font-size: 1rem; font-weight: 800; }
-.role-badge { display: inline-block; font-size: .66rem; font-weight: 700; padding: 2px 7px; border-radius: 99px; margin-top: 2px; }
-.role-card.host .role-badge { background: rgba(108,99,255,.2); color: #a89fff; }
-.role-card.guest .role-badge { background: rgba(56,189,248,.15); color: var(--blue); }
-
-.role-perms { display: flex; flex-direction: column; gap: 5px; }
-.perm-item { display: flex; align-items: center; gap: 7px; font-size: .78rem; color: var(--muted); }
-.perm-item .pi { width: 14px; text-align: center; }
-.perm-item.yes { color: var(--text); }
-.perm-item.no { opacity: .45; text-decoration: line-through; }
-
-.role-enter-btn {
-  width: 100%; padding: 10px; border-radius: 10px; border: none; font-size: .86rem; font-weight: 700; cursor: pointer; margin-top: auto; transition: .18s;
-}
-.role-card.host .role-enter-btn { background: var(--accent); color: #fff; }
-.role-card.host .role-enter-btn:hover { background: #7c74ff; }
-.role-card.guest .role-enter-btn { background: rgba(56,189,248,.15); color: var(--blue); border: 1px solid rgba(56,189,248,.3); }
-.role-card.guest .role-enter-btn:hover { background: rgba(56,189,248,.28); }
-
-/* Divider */
-.lock-divider { font-size: .74rem; color: var(--muted); }
-
-/* ── PIN entry panel ── */
-#pinEntry {
-  display: none; flex-direction: column; align-items: center; gap: 18px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 22px;
-  padding: 28px 32px; width: 90%; max-width: 340px; margin: 32px auto 48px;
-  box-shadow: 0 24px 64px rgba(0,0,0,.4);
-}
-#pinEntry.visible { display: flex; }
-.pin-back { align-self: flex-start; background: none; border: none; color: var(--muted); cursor: pointer; font-size: .82rem; padding: 0; display: flex; align-items: center; gap: 4px; }
-.pin-back:hover { color: var(--text); }
-.pin-role-badge { display: flex; align-items: center; gap: 7px; padding: 5px 14px; border-radius: 99px; font-size: .82rem; font-weight: 700; }
-.pin-role-badge.host { background: rgba(108,99,255,.18); color: #a89fff; }
-.pin-role-badge.guest { background: rgba(56,189,248,.15); color: var(--blue); }
-.pin-title { font-size: 1.05rem; font-weight: 800; text-align: center; }
-.pin-sub { font-size: .8rem; color: var(--muted); text-align: center; margin-top: -10px; line-height: 1.5; }
-.pin-dots { display: flex; gap: 12px; }
-.pin-dot { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--muted); background: transparent; transition: .15s; }
-.pin-dot.filled { background: var(--accent); border-color: var(--accent); }
-.pin-dot.filled.guest-mode { background: var(--blue); border-color: var(--blue); }
-.pin-dot.error { background: var(--red); border-color: var(--red); }
-.pin-dot.success { background: var(--accent2); border-color: var(--accent2); }
-.pin-error { font-size: .78rem; color: var(--red); min-height: 18px; text-align: center; }
-.pin-pad { display: grid; grid-template-columns: repeat(3, 68px); grid-template-rows: repeat(4, 68px); gap: 9px; }
-.pin-key {
-  width: 68px; height: 68px; border-radius: 50%; border: none;
-  background: var(--surface2); color: var(--text);
-  font-size: 1.35rem; font-weight: 600; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: background .12s, transform .1s, box-shadow .12s; user-select: none;
-}
-.pin-key:hover { background: var(--surface3); box-shadow: 0 4px 12px rgba(0,0,0,.3); }
-.pin-key:active { transform: scale(.9); }
-.pin-key.empty { background: transparent; cursor: default; pointer-events: none; }
-.pin-link { font-size: .75rem; color: var(--muted); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
-.pin-link:hover { color: var(--accent); }
-.skip-pin-btn { background: none; border: 1px dashed var(--border); color: var(--muted); border-radius: 8px; padding: 7px 18px; cursor: pointer; font-size: .8rem; transition: .15s; }
-.skip-pin-btn:hover { border-color: var(--blue); color: var(--blue); }
-
-/* ── Header ── */
-header {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(15,17,23,.92); backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
-  padding: 12px 24px; display: flex; align-items: center; gap: 12px;
-}
-.logo { font-size: 1.3rem; font-weight: 800; letter-spacing: -.5px; display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
-.logo span { color: var(--accent); }
-.search-wrap { flex: 1; max-width: 340px; position: relative; }
-.search-wrap input {
-  width: 100%; background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 99px; padding: 8px 14px 8px 36px; color: var(--text);
-  font-size: .88rem; outline: none; transition: border-color .2s;
-}
-.search-wrap input:focus { border-color: var(--accent); }
-.search-wrap .sicon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: .45; font-size: .9rem; }
-.header-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-.role-pill {
-  display: flex; align-items: center; gap: 5px; padding: 4px 12px;
-  border-radius: 99px; font-size: .78rem; font-weight: 700; flex-shrink: 0;
-}
-.role-pill.host { background: rgba(108,99,255,.2); color: #a89fff; }
-.role-pill.guest { background: rgba(56,189,248,.15); color: var(--blue); }
-.btn { padding: 8px 16px; border-radius: 99px; border: none; cursor: pointer; font-size: .85rem; font-weight: 600; transition: .15s; }
-.btn-primary { background: var(--accent); color: #fff; }
-.btn-primary:hover { background: #7c74ff; }
-.btn-sm { padding: 5px 11px; font-size: .76rem; }
-.btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
-.btn-icon { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); cursor: pointer; font-size: .9rem; display: flex; align-items: center; justify-content: center; transition: .15s; }
-.btn-icon:hover { border-color: var(--accent); color: var(--accent); }
-
-/* ── Layout ── */
-.layout { display: flex; min-height: calc(100vh - 57px); }
-aside {
-  width: 200px; flex-shrink: 0; padding: 18px 10px;
-  border-right: 1px solid var(--border); position: sticky; top: 57px;
-  height: calc(100vh - 57px); overflow-y: auto;
-}
-aside h3 { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); padding: 0 8px; margin-bottom: 7px; }
-.tag-list { display: flex; flex-direction: column; gap: 1px; margin-bottom: 18px; }
-.tag-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: .86rem; transition: background .15s; }
-.tag-item:hover { background: var(--surface2); }
-.tag-item.active { background: var(--surface3); color: var(--accent); font-weight: 600; }
-.tag-count { font-size: .7rem; background: var(--surface3); padding: 1px 7px; border-radius: 99px; color: var(--muted); }
-.tag-item.active .tag-count { background: rgba(108,99,255,.2); color: var(--accent); }
-
-/* ── Main ── */
-main { flex: 1; padding: 20px 24px; }
-.toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
-.sort-select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 6px 10px; font-size: .83rem; outline: none; cursor: pointer; }
-.count-label { font-size: .83rem; color: var(--muted); margin-left: auto; }
-
-/* ── Cards ── */
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
-.app-card {
-  background: var(--surface); border: 1.5px solid var(--border);
-  border-radius: var(--radius); padding: 18px; display: flex; flex-direction: column; gap: 9px;
-  transition: border-color .2s, transform .2s, box-shadow .2s; position: relative;
-}
-.app-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(108,99,255,.16); }
-.app-card.host-only { border-color: rgba(108,99,255,.4); }
-.app-card-top { display: flex; align-items: flex-start; gap: 10px; }
-.app-emoji { font-size: 1.9rem; line-height: 1; flex-shrink: 0; }
-.app-info { flex: 1; min-width: 0; }
-.app-title { font-size: .96rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.app-url { font-size: .72rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
-.app-desc { font-size: .8rem; color: var(--muted); line-height: 1.5; }
-.app-tags { display: flex; flex-wrap: wrap; gap: 4px; }
-.tag-chip { font-size: .7rem; padding: 2px 8px; border-radius: 99px; background: rgba(108,99,255,.18); color: #a89fff; cursor: pointer; border: none; transition: background .15s; }
-.tag-chip:hover { background: rgba(108,99,255,.35); }
-.perm-badges { display: flex; gap: 5px; flex-wrap: wrap; }
-.perm-badge { font-size: .68rem; padding: 2px 7px; border-radius: 5px; font-weight: 600; }
-.perm-badge.host-only-badge { background: rgba(108,99,255,.18); color: #a89fff; }
-.perm-badge.public-badge { background: rgba(67,233,123,.12); color: var(--accent2); }
-.perm-badge.dl-badge { background: rgba(56,189,248,.12); color: var(--blue); }
-.perm-badge.nodl-badge { background: rgba(139,146,164,.12); color: var(--muted); }
-.app-actions { display: flex; gap: 5px; margin-top: auto; padding-top: 8px; border-top: 1px solid var(--border); }
-.launch-btn {
-  flex: 1; background: var(--accent); color: #fff; border: none; border-radius: 8px;
-  padding: 7px; font-size: .82rem; font-weight: 600; cursor: pointer; transition: background .15s;
-  display: flex; align-items: center; justify-content: center; gap: 4px;
-}
-.launch-btn:hover { background: #7c74ff; }
-.dl-btn {
-  padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border);
-  background: var(--surface2); color: var(--blue); cursor: pointer; font-size: .85rem;
-  transition: .15s; display: flex; align-items: center;
-}
-.dl-btn:hover { border-color: var(--blue); background: rgba(56,189,248,.1); }
-.icon-btn { width: 32px; height: 32px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); cursor: pointer; font-size: .85rem; display: flex; align-items: center; justify-content: center; transition: .15s; }
-.icon-btn:hover { border-color: var(--accent); color: var(--accent); }
-.icon-btn.del:hover { border-color: var(--red); color: var(--red); }
-.empty { text-align: center; padding: 70px 20px; color: var(--muted); }
-.empty .big { font-size: 3rem; margin-bottom: 14px; }
-
-/* ── Modals ── */
-.modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200; align-items: center; justify-content: center; }
-.modal-backdrop.open { display: flex; }
-.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 26px; width: 90%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
-.modal h2 { font-size: 1.05rem; font-weight: 700; margin-bottom: 18px; }
-.field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 13px; }
-.field label { font-size: .78rem; font-weight: 600; color: var(--muted); }
-.field input, .field textarea, .field select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 9px; padding: 9px 12px; font-size: .88rem; outline: none; transition: border-color .2s; font-family: inherit; }
-.field input:focus, .field textarea:focus { border-color: var(--accent); }
-.field textarea { resize: vertical; min-height: 60px; }
-.emoji-grid { display: flex; flex-wrap: wrap; gap: 5px; }
-.emoji-opt { width: 34px; height: 34px; border-radius: 7px; border: 1.5px solid var(--border); background: var(--surface2); font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: .15s; }
-.emoji-opt:hover, .emoji-opt.selected { border-color: var(--accent); background: rgba(108,99,255,.15); }
-.tag-input-wrap { display: flex; gap: 7px; align-items: center; }
-.tag-input-wrap input { flex: 1; }
-.chip-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
-.chip { display: flex; align-items: center; gap: 3px; font-size: .74rem; padding: 3px 9px; border-radius: 99px; background: rgba(108,99,255,.2); color: #a89fff; }
-
-/* Toast */
-#toast {
-  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
-  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-  padding: 12px 22px; font-size: .88rem; font-weight: 600; z-index: 9999;
-  display: flex; align-items: center; gap: 8px;
-  box-shadow: 0 8px 32px rgba(0,0,0,.4);
-  transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .3s;
-  opacity: 0; pointer-events: none;
-}
-#toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-#toast.success { border-color: var(--accent2); color: var(--accent2); }
-#toast.error { border-color: var(--red); color: var(--red); }
-.chip button { background: none; border: none; cursor: pointer; color: #a89fff; font-size: .82rem; padding: 0 1px; line-height: 1; }
-.chip button:hover { color: var(--red); }
-.modal-actions { display: flex; gap: 9px; justify-content: flex-end; margin-top: 8px; }
-.fetch-row { display: flex; gap: 7px; }
-.fetch-row input { flex: 1; }
-.fetch-status { font-size: .74rem; margin-top: 3px; min-height: 17px; }
-.fetch-status.ok { color: var(--accent2); }
-.fetch-status.err { color: var(--red); }
-.suggest-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
-.suggest-chip { font-size: .7rem; padding: 2px 8px; border-radius: 99px; border: 1px dashed var(--border); color: var(--muted); cursor: pointer; background: none; transition: .15s; }
-.suggest-chip:hover { border-color: var(--accent); color: var(--accent); }
-
-/* perm row in edit modal */
-.perm-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
-.perm-row:last-child { border-bottom: none; }
-.perm-row-label { font-size: .86rem; }
-.perm-row-desc { font-size: .74rem; color: var(--muted); margin-top: 2px; }
-.toggle-wrap { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
-.toggle-wrap input { opacity: 0; width: 0; height: 0; position: absolute; }
-.toggle-slider { position: absolute; inset: 0; background: var(--surface3); border-radius: 99px; cursor: pointer; transition: background .2s; }
-.toggle-slider::before { content: ''; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform .2s; }
-.toggle-wrap input:checked + .toggle-slider { background: var(--accent); }
-.toggle-wrap input:checked + .toggle-slider::before { transform: translateX(18px); }
-
-/* Settings modal */
-.settings-section { margin-bottom: 20px; }
-.settings-section h3 { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: 10px; }
-.pin-change-row { display: flex; gap: 8px; align-items: center; }
-.pin-change-row input { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 9px; padding: 8px 12px; font-size: .88rem; outline: none; font-family: inherit; letter-spacing: 4px; }
-.pin-change-row input:focus { border-color: var(--accent); }
-.settings-status { font-size: .78rem; min-height: 18px; margin-top: 4px; }
-.settings-status.ok { color: var(--accent2); }
-.settings-status.err { color: var(--red); }
-
-/* ── AI classification ── */
-.ai-classify-row { display: flex; gap: 7px; align-items: center; margin-bottom: 6px; }
-.btn-ai {
-  display: flex; align-items: center; gap: 5px;
-  padding: 6px 13px; border-radius: 8px; border: 1px solid rgba(108,99,255,.4);
-  background: rgba(108,99,255,.12); color: #a89fff; font-size: .8rem; font-weight: 600;
-  cursor: pointer; transition: .15s; white-space: nowrap;
-}
-.btn-ai:hover { background: rgba(108,99,255,.25); border-color: var(--accent); color: #fff; }
-.btn-ai:disabled { opacity: .45; cursor: not-allowed; }
-.ai-source-badge {
-  font-size: .7rem; padding: 2px 8px; border-radius: 99px; font-weight: 600;
-}
-.ai-source-badge.claude { background: rgba(108,99,255,.18); color: #a89fff; }
-.ai-source-badge.local { background: rgba(67,233,123,.12); color: var(--accent2); }
-.ai-spin { display: inline-block; animation: spin .7s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.category-grid { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
-.cat-chip {
-  font-size: .74rem; padding: 4px 10px; border-radius: 8px;
-  border: 1px solid var(--border); background: var(--surface2); color: var(--muted);
-  cursor: pointer; transition: .15s;
-}
-.cat-chip:hover { border-color: var(--accent); color: var(--accent); }
-.cat-chip.selected { border-color: var(--accent); background: rgba(108,99,255,.2); color: #a89fff; font-weight: 600; }
-
-@media (max-width: 640px) {
-  aside { display: none; }
-  main { padding: 14px; }
-  header { padding: 10px 14px; }
-}
+/* TOAST */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:11px 20px;font-size:.85rem;font-weight:600;z-index:9999;box-shadow:0 8px 28px rgba(0,0,0,.4);opacity:0;transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;pointer-events:none;white-space:nowrap}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+#toast.ok{border-color:var(--green);color:var(--green)}
+#toast.er{border-color:var(--red);color:var(--red)}
+@media(max-width:600px){aside{display:none}main{padding:12px}header{padding:10px 14px}}
 </style>
 </head>
 <body>
-
 <div id="toast"></div>
 
-<!-- ══════════════ LOCK SCREEN ══════════════ -->
-<div id="lockScreen">
-
-  <!-- Step 1: Hero + Role Picker -->
-  <div id="rolePicker" style="width:100%;display:flex;flex-direction:column;align-items:center;">
-
-    <!-- Hero banner -->
-    <div class="lock-hero">
-      <div class="lock-hero-inner">
-        <div class="lock-brand">
-          <div class="lock-brand-icon">🗂</div>
-          <div class="lock-brand-text">
-            <div class="lock-brand-title">Young <span>APP</span> Library</div>
-            <div class="lock-brand-sub">Your AI Apps Collection</div>
-          </div>
-        </div>
-        <p class="lock-tagline">
-          <strong>專屬 AI Apps 的集中平台。</strong><br>
-          收藏、分類、啟動你的所有 AI 工具，Host 完整管理，Guest 輕鬆探索。
-        </p>
-        <div class="lock-features">
-          <div class="feat-pill"><span class="fi">🤖</span> AI 工具收藏庫</div>
-          <div class="feat-pill"><span class="fi">✨</span> AI 自動分類標籤</div>
-          <div class="feat-pill"><span class="fi">🔒</span> PIN 雙角色保護</div>
-          <div class="feat-pill"><span class="fi">⬇️</span> 一鍵下載 AI App</div>
-          <div class="feat-pill"><span class="fi">👥</span> Guest 分享權限</div>
+<!-- LOCK -->
+<div id="lock">
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="brand">
+        <div class="brand-icon">🗂</div>
+        <div>
+          <div class="brand-name">Young <span>APP</span> Library</div>
+          <div class="brand-sub">Your AI Apps Collection</div>
         </div>
       </div>
-    </div>
-
-    <!-- Role picker -->
-    <div class="lock-role-section">
-      <div class="lock-role-label">選擇您的身份以繼續</div>
-      <div class="role-cards">
-
-        <!-- Host -->
-        <div class="role-card host" onclick="selectRole('host')">
-          <div class="role-card-top">
-            <div class="role-icon-wrap">👑</div>
-            <div class="role-card-titles">
-              <div class="role-name">Host</div>
-              <div class="role-badge">管理員</div>
-            </div>
-          </div>
-          <div class="role-perms">
-            <div class="perm-item yes"><span class="pi">✅</span> 新增 / 編輯 / 刪除 AI App</div>
-            <div class="perm-item yes"><span class="pi">✅</span> AI 自動分類 & 手動標籤</div>
-            <div class="perm-item yes"><span class="pi">✅</span> 查看所有 App（含私密）</div>
-            <div class="perm-item yes"><span class="pi">✅</span> 控制 Guest 可見與下載</div>
-            <div class="perm-item yes"><span class="pi">✅</span> 管理 PIN & 系統設定</div>
-          </div>
-          <button class="role-enter-btn">進入 Host →</button>
-        </div>
-
-        <!-- Guest -->
-        <div class="role-card guest" onclick="selectRole('guest')">
-          <div class="role-card-top">
-            <div class="role-icon-wrap">👤</div>
-            <div class="role-card-titles">
-              <div class="role-name">Guest</div>
-              <div class="role-badge">訪客</div>
-            </div>
-          </div>
-          <div class="role-perms">
-            <div class="perm-item yes"><span class="pi">✅</span> 瀏覽公開 AI Apps</div>
-            <div class="perm-item yes"><span class="pi">✅</span> 一鍵啟動任意 AI 工具</div>
-            <div class="perm-item yes"><span class="pi">✅</span> 下載（Host 授權後）</div>
-            <div class="perm-item no"><span class="pi">—</span> 新增或修改 App</div>
-            <div class="perm-item no"><span class="pi">—</span> 查看私密 App</div>
-          </div>
-          <button class="role-enter-btn">以訪客進入 →</button>
-        </div>
-
+      <p class="tagline"><strong>專屬 AI Apps 的集中平台。</strong><br>收藏、分類、一鍵啟動所有 AI 工具，Host 完整管理，Guest 輕鬆探索。</p>
+      <div class="pills">
+        <div class="pill">🤖 AI 工具收藏庫</div>
+        <div class="pill">✨ AI 自動分類</div>
+        <div class="pill">🔒 PIN 雙角色保護</div>
+        <div class="pill">⬇️ 一鍵下載</div>
+        <div class="pill">👥 Guest 分享權限</div>
       </div>
     </div>
   </div>
-
-  <!-- Step 2: PIN entry panel -->
-  <div id="pinEntry">
-    <button class="pin-back" onclick="backToRoles()">← 返回選擇身份</button>
-    <div class="pin-role-badge" id="pinRoleBadge"></div>
+  <div class="role-section" id="rolePicker">
+    <div class="role-label">選擇您的身份以繼續</div>
+    <div class="role-cards">
+      <div class="role-card host" onclick="pickRole('host')">
+        <div class="rc-top"><div class="rc-icon">👑</div><div><div class="rc-name">Host</div><div class="rc-badge">管理員</div></div></div>
+        <div class="rc-perms">
+          <div class="rc-perm">✅ 新增 / 編輯 / 刪除 AI App</div>
+          <div class="rc-perm">✅ AI 自動分類 & 手動標籤</div>
+          <div class="rc-perm">✅ 查看所有 App（含私密）</div>
+          <div class="rc-perm">✅ 控制 Guest 可見與下載</div>
+          <div class="rc-perm">✅ 管理 PIN & 系統設定</div>
+        </div>
+        <button class="rc-btn">進入 Host →</button>
+      </div>
+      <div class="role-card guest" onclick="pickRole('guest')">
+        <div class="rc-top"><div class="rc-icon">👤</div><div><div class="rc-name">Guest</div><div class="rc-badge">訪客</div></div></div>
+        <div class="rc-perms">
+          <div class="rc-perm">✅ 瀏覽公開 AI Apps</div>
+          <div class="rc-perm">✅ 一鍵啟動 AI 工具</div>
+          <div class="rc-perm">✅ 下載（Host 授權後）</div>
+          <div class="rc-perm no">— 新增或修改 App</div>
+          <div class="rc-perm no">— 查看私密 App</div>
+        </div>
+        <button class="rc-btn">以訪客進入 →</button>
+      </div>
+    </div>
+  </div>
+  <div id="pin-panel">
+    <button class="pin-back" onclick="backToRoles()">← 返回</button>
+    <div class="pin-badge" id="pinBadge"></div>
     <div class="pin-title" id="pinTitle"></div>
     <div class="pin-sub" id="pinSub"></div>
-    <div class="pin-dots" id="pinDots">
-      <div class="pin-dot" id="d0"></div>
-      <div class="pin-dot" id="d1"></div>
-      <div class="pin-dot" id="d2"></div>
-      <div class="pin-dot" id="d3"></div>
+    <div class="pin-dots"><div class="dot" id="d0"></div><div class="dot" id="d1"></div><div class="dot" id="d2"></div><div class="dot" id="d3"></div></div>
+    <div class="pin-err" id="pinErr"></div>
+    <div class="numpad">
+      <button class="nk" onclick="nk('1')">1</button><button class="nk" onclick="nk('2')">2</button><button class="nk" onclick="nk('3')">3</button>
+      <button class="nk" onclick="nk('4')">4</button><button class="nk" onclick="nk('5')">5</button><button class="nk" onclick="nk('6')">6</button>
+      <button class="nk" onclick="nk('7')">7</button><button class="nk" onclick="nk('8')">8</button><button class="nk" onclick="nk('9')">9</button>
+      <button class="nk empty"></button><button class="nk" onclick="nk('0')">0</button><button class="nk" onclick="nb()">⌫</button>
     </div>
-    <div class="pin-error" id="pinError"></div>
-    <div class="pin-pad">
-      <button class="pin-key" onclick="pinPress('1')">1</button>
-      <button class="pin-key" onclick="pinPress('2')">2</button>
-      <button class="pin-key" onclick="pinPress('3')">3</button>
-      <button class="pin-key" onclick="pinPress('4')">4</button>
-      <button class="pin-key" onclick="pinPress('5')">5</button>
-      <button class="pin-key" onclick="pinPress('6')">6</button>
-      <button class="pin-key" onclick="pinPress('7')">7</button>
-      <button class="pin-key" onclick="pinPress('8')">8</button>
-      <button class="pin-key" onclick="pinPress('9')">9</button>
-      <button class="pin-key empty"></button>
-      <button class="pin-key" onclick="pinPress('0')">0</button>
-      <button class="pin-key" onclick="pinBackspace()">⌫</button>
-    </div>
-    <button class="skip-pin-btn" id="guestSkipBtn" style="display:none" onclick="unlockApp()">直接進入（無需 PIN）</button>
-    <span class="pin-link" id="pinForgot" style="display:none" onclick="pinReset()">忘記 PIN？重設</span>
+    <button class="skip-btn" id="skipBtn" style="display:none" onclick="unlock()">直接進入（無需 PIN）</button>
+    <span class="pin-link" id="pinReset" style="display:none" onclick="doReset()">忘記 PIN？重設</span>
   </div>
-
 </div>
 
-<!-- ══════════════ APP ══════════════ -->
+<!-- APP -->
 <header>
   <div class="logo">🗂 Young <span>APP</span> Library</div>
   <div class="search-wrap">
-    <span class="sicon">🔍</span>
-    <input type="text" id="searchInput" placeholder="搜尋 AI App 名稱、功能、標籤…">
-    <button id="searchClear" onclick="clearSearch()" title="清除搜尋" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;padding:2px 4px;">✕</button>
+    <span class="si">🔍</span>
+    <input type="text" id="searchInput" placeholder="搜尋 AI App 名稱、標籤…" oninput="onSearch()">
+    <button id="sclear" onclick="clearSearch()">✕</button>
   </div>
-  <div class="header-right">
-    <div class="role-pill" id="rolePill"></div>
-    <button class="btn-icon host-only-ui" id="settingsBtn" onclick="openSettings()" title="設定">⚙️</button>
-    <button class="btn btn-primary host-only-ui" onclick="openModal()">+ 新增 App</button>
-    <button class="btn btn-ghost btn-sm" onclick="logout()" title="登出">🚪</button>
+  <div class="hright">
+    <div class="rpill" id="rolePill"></div>
+    <button class="iBtn host-ui" onclick="openSettings()" title="設定">⚙️</button>
+    <button class="btn btn-p host-ui" onclick="openAdd()">+ 新增 App</button>
+    <button class="btn btn-g btn-sm" onclick="doLogout()">登出</button>
   </div>
 </header>
 
@@ -491,1035 +293,637 @@ main { flex: 1; padding: 20px 24px; }
     <h3>分類</h3>
     <div class="tag-list" id="tagList"></div>
     <h3>排序</h3>
-    <select class="sort-select" id="sortSelect" style="width:100%;margin-top:2px" onchange="render()">
-      <option value="recent">最近新增</option>
-      <option value="alpha">名稱 A→Z</option>
-      <option value="tag">標籤數量</option>
+    <select class="sort-sel" id="sortSel" onchange="render()">
+      <option value="new">最近新增</option>
+      <option value="az">名稱 A→Z</option>
     </select>
   </aside>
   <main>
-    <div class="toolbar">
-      <span class="count-label" id="countLabel"></span>
-    </div>
+    <div class="count" id="countLabel"></div>
     <div class="grid" id="grid"></div>
-    <div class="empty" id="empty" style="display:none">
+    <div class="empty" id="emptyBox" style="display:none">
       <div class="big">📦</div>
-      <p id="emptyMsg">還沒有任何 AI App<br>點右上角「+ 新增 App」加入你的第一個 AI 工具</p>
+      <div id="emptyMsg">還沒有任何 AI App<br>點右上角「+ 新增 App」加入第一個工具</div>
     </div>
   </main>
 </div>
 
-<!-- ── Add/Edit App Modal ── -->
-<div class="modal-backdrop" id="modalBackdrop" onclick="closeModalOutside(event)">
+<!-- Add/Edit -->
+<div class="backdrop" id="addModal">
   <div class="modal">
-    <h2 id="modalTitle">新增 App</h2>
+    <h2 id="addTitle">新增 App</h2>
     <div class="field">
-      <label>URL 或本機路徑</label>
+      <label>URL 或本機路徑 *</label>
       <div class="fetch-row">
         <input type="text" id="fUrl" placeholder="https://… 或 file:///C:/…">
-        <button class="btn btn-ghost btn-sm" onclick="fetchTitle()">自動取得標題</button>
+        <button class="btn btn-g btn-sm" onclick="fetchT()">自動取得標題</button>
       </div>
-      <div class="fetch-status" id="fetchStatus"></div>
+      <div class="fst" id="fst"></div>
     </div>
-    <div class="field">
-      <label>App 名稱 *</label>
-      <input type="text" id="fName" placeholder="我的 App">
-    </div>
-    <div class="field">
-      <label>圖示</label>
-      <div class="emoji-grid" id="emojiGrid"></div>
-    </div>
-    <div class="field">
-      <label>說明（選填）</label>
-      <textarea id="fDesc" placeholder="這個 App 的功能或用途…"></textarea>
-    </div>
+    <div class="field"><label>App 名稱 *</label><input type="text" id="fName" placeholder="我的 AI App"></div>
+    <div class="field"><label>圖示</label><div class="emoji-row" id="emojiRow"></div></div>
+    <div class="field"><label>說明（選填）</label><textarea id="fDesc" placeholder="這個 AI App 的功能或用途…"></textarea></div>
     <div class="field">
       <label>標籤</label>
-      <div class="tag-input-wrap">
-        <input type="text" id="fTagInput" placeholder="輸入後按 Enter 新增" onkeydown="tagKeydown(event)">
-        <button class="btn btn-ghost btn-sm" onclick="addTagFromInput()">新增</button>
+      <div class="tinput-row">
+        <input type="text" id="fTag" placeholder="輸入後按 Enter" onkeydown="if(event.key==='Enter'){event.preventDefault();addTagI()}">
+        <button class="btn btn-g btn-sm" onclick="addTagI()">新增</button>
       </div>
-      <div class="suggest-tags" id="suggestTags"></div>
-      <div class="chip-list" id="chipList"></div>
+      <div class="suggest" id="suggestBox"></div>
+      <div class="chips" id="chipBox"></div>
     </div>
-
-    <!-- AI Classification -->
     <div class="field">
-      <label>分類 / Category</label>
-      <div class="ai-classify-row">
-        <button class="btn-ai" id="aiClassifyBtn" onclick="runAIClassify()">🤖 AI 自動分類</button>
-        <span class="ai-source-badge" id="aiSourceBadge" style="display:none"></span>
-      </div>
-      <div class="category-grid" id="categoryGrid"></div>
+      <label style="display:flex;align-items:center;gap:8px">分類 / Category <button class="btn btn-g btn-sm" onclick="aiClassify()" id="aibtn">🤖 AI 自動分類</button></label>
+      <div class="catgrid" id="catGrid"></div>
     </div>
-
-    <!-- Permissions section -->
-    <div class="settings-section" style="margin-top:8px">
-      <h3>權限設定</h3>
-      <div class="perm-row">
-        <div>
-          <div class="perm-row-label">👥 Guest 可見</div>
-          <div class="perm-row-desc">關閉後此 App 僅 Host 可見</div>
-        </div>
-        <label class="toggle-wrap"><input type="checkbox" id="fVisibility" checked><span class="toggle-slider"></span></label>
+    <div class="field">
+      <label>權限設定</label>
+      <div class="prow">
+        <div><div class="prow-l">👥 Guest 可見</div><div class="prow-d">關閉後僅 Host 可見</div></div>
+        <label class="tog"><input type="checkbox" id="fVis" checked><span class="tog-sl"></span></label>
       </div>
-      <div class="perm-row">
-        <div>
-          <div class="perm-row-label">⬇️ 允許下載</div>
-          <div class="perm-row-desc">Guest 可下載此 App 的原始檔案</div>
-        </div>
-        <label class="toggle-wrap"><input type="checkbox" id="fDownloadable"><span class="toggle-slider"></span></label>
+      <div class="prow">
+        <div><div class="prow-l">⬇️ 允許下載</div><div class="prow-d">Guest 可下載原始檔案</div></div>
+        <label class="tog"><input type="checkbox" id="fDl"><span class="tog-sl"></span></label>
       </div>
     </div>
-
-    <div id="saveError" style="display:none;background:rgba(245,87,108,.12);border:1px solid rgba(245,87,108,.35);border-radius:9px;padding:9px 13px;font-size:.82rem;color:#f5576c;margin-bottom:4px;"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
-      <button class="btn btn-primary" onclick="saveApp()">儲存</button>
+    <div class="merr" id="merr"></div>
+    <div class="mactions">
+      <button class="btn btn-g" onclick="closeAdd()">取消</button>
+      <button class="btn btn-p" onclick="saveApp()">儲存</button>
     </div>
   </div>
 </div>
 
-<!-- ── Settings Modal ── -->
-<div class="modal-backdrop" id="settingsBackdrop" onclick="closeSettingsOutside(event)">
+<!-- Settings -->
+<div class="backdrop" id="settingsModal">
   <div class="modal">
     <h2>⚙️ 設定</h2>
-
-    <div class="settings-section">
+    <div class="ssec">
       <h3>Host PIN</h3>
-      <div class="pin-change-row">
-        <input type="password" id="sHostPin1" maxlength="4" placeholder="新 PIN" inputmode="numeric">
-        <input type="password" id="sHostPin2" maxlength="4" placeholder="確認 PIN" inputmode="numeric">
-        <button class="btn btn-ghost btn-sm" onclick="changeHostPin()">更新</button>
+      <div class="srow">
+        <input type="password" id="sH1" maxlength="4" placeholder="新 PIN" inputmode="numeric">
+        <input type="password" id="sH2" maxlength="4" placeholder="確認 PIN" inputmode="numeric">
+        <button class="btn btn-g btn-sm" onclick="setHostPin()">更新</button>
       </div>
-      <div class="settings-status" id="hostPinStatus"></div>
+      <div class="sst" id="hpSt"></div>
     </div>
-
-    <div class="settings-section">
+    <div class="ssec">
       <h3>Guest 設定</h3>
-      <div class="perm-row">
-        <div>
-          <div class="perm-row-label">🔐 Guest 需要 PIN</div>
-          <div class="perm-row-desc">關閉後 Guest 可直接進入</div>
-        </div>
-        <label class="toggle-wrap"><input type="checkbox" id="sGuestPinRequired" onchange="saveSettings()"><span class="toggle-slider"></span></label>
+      <div class="prow">
+        <div><div class="prow-l">🔐 Guest 需要 PIN</div><div class="prow-d">關閉後 Guest 可直接進入</div></div>
+        <label class="tog"><input type="checkbox" id="sGReq" onchange="saveCfg()"><span class="tog-sl"></span></label>
       </div>
-      <div id="guestPinSection" style="margin-top:10px">
-        <div class="pin-change-row">
-          <input type="password" id="sGuestPin1" maxlength="4" placeholder="Guest PIN" inputmode="numeric">
-          <input type="password" id="sGuestPin2" maxlength="4" placeholder="確認 PIN" inputmode="numeric">
-          <button class="btn btn-ghost btn-sm" onclick="changeGuestPin()">更新</button>
+      <div id="gpSection" style="margin-top:10px">
+        <div class="srow">
+          <input type="password" id="sG1" maxlength="4" placeholder="Guest PIN" inputmode="numeric">
+          <input type="password" id="sG2" maxlength="4" placeholder="確認 PIN" inputmode="numeric">
+          <button class="btn btn-g btn-sm" onclick="setGuestPin()">更新</button>
         </div>
-        <div class="settings-status" id="guestPinStatus"></div>
+        <div class="sst" id="gpSt"></div>
       </div>
     </div>
-
-    <div class="settings-section">
+    <div class="ssec">
       <h3>AI 自動分類</h3>
-      <div class="perm-row">
-        <div>
-          <div class="perm-row-label">🤖 使用 Claude AI 分類</div>
-          <div class="perm-row-desc">輸入 Anthropic API Key 以啟用更精準的 AI 分類</div>
-        </div>
-        <label class="toggle-wrap"><input type="checkbox" id="sAiEnabled" onchange="toggleAiSection()"><span class="toggle-slider"></span></label>
+      <div class="prow">
+        <div><div class="prow-l">🤖 使用 Claude AI</div><div class="prow-d">需要 Anthropic API Key</div></div>
+        <label class="tog"><input type="checkbox" id="sAI" onchange="saveCfg()"><span class="tog-sl"></span></label>
       </div>
-      <div id="aiKeySection" style="margin-top:10px;display:none">
-        <div class="pin-change-row" style="gap:6px">
-          <input type="password" id="sApiKey" placeholder="sk-ant-…" style="letter-spacing:normal;font-size:.8rem">
-          <button class="btn btn-ghost btn-sm" onclick="saveApiKey()">儲存</button>
+      <div id="aiSection" style="margin-top:10px;display:none">
+        <div class="srow">
+          <input type="text" id="sKey" placeholder="sk-ant-…">
+          <button class="btn btn-g btn-sm" onclick="saveKey()">儲存</button>
         </div>
-        <div class="settings-status" id="apiKeyStatus"></div>
+        <div class="sst" id="keySt"></div>
       </div>
     </div>
-
-    <div class="settings-section">
+    <div class="ssec">
       <h3>資料管理</h3>
-      <div class="perm-row">
-        <div>
-          <div class="perm-row-label">🧹 移除重複 App</div>
-          <div class="perm-row-desc">刪除相同 URL 的重複項目，只保留最早新增的</div>
-        </div>
-        <button class="btn btn-ghost btn-sm" onclick="removeDuplicates()">執行</button>
+      <div class="prow">
+        <div><div class="prow-l">🧹 移除重複 App</div><div class="prow-d">刪除相同 URL 的重複項目</div></div>
+        <button class="btn btn-g btn-sm" onclick="dedup()">執行</button>
       </div>
-      <div class="settings-status" id="dedupStatus"></div>
+      <div class="sst" id="ddSt"></div>
     </div>
-
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeSettings()">關閉</button>
-    </div>
+    <div class="mactions"><button class="btn btn-g" onclick="closeSettings()">關閉</button></div>
   </div>
 </div>
 
 <script>
-/* ══════════════════════════════════════════
-   DATA & STATE
-══════════════════════════════════════════ */
-const EMOJIS = ['📊','💰','📈','📉','🗂','🛠','🔧','🌐','📋','🎯','📦','🚀','🔍','💡','⚙️','🏠','🎨','📝','🔒','📱'];
-const SUGGEST_MAP = {
-  '財務':['財務','金融','記帳'],'金融':['金融','財務'],'股票':['股票','投資','金融'],
-  '管理':['管理','工具'],'工具':['工具'],'記帳':['記帳','財務'],
-  'finance':['Finance','Tool'],'stock':['Stock','Finance','Investment'],
-  'dashboard':['Dashboard','Tool'],'app':['Tool'],
-};
-const CATEGORY_COLORS = {
-  '財務':['#43e97b','#0a2016'],'金融':['#ffd700','#2a2000'],'股票':['#38bdf8','#001a2e'],
-  'Finance':['#43e97b','#0a2016'],'Stock':['#38bdf8','#001a2e'],'Tool':['#a78bfa','#160d2e'],
-  '工具':['#a78bfa','#160d2e'],'管理':['#fb923c','#2a1000'],'記帳':['#f472b6','#2a0018'],
-  '投資':['#38bdf8','#001a2e'],
+// ── STORAGE ──
+const LS={
+  get:k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}},
+  set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch{return false}}
 };
 
-let apps = JSON.parse(localStorage.getItem('applib_apps') || '[]');
-let settings = JSON.parse(localStorage.getItem('applib_settings') || '{}');
-// settings: { guestPinRequired: bool, guestPin: hash, hostPin: hash }
+// ── STATE ──
+let apps=LS.get('yal_apps')||[];
+let cfg=LS.get('yal_cfg')||{};
+let role=null,activeTag='all',editId=null,curTags=[],curEmoji='🤖';
+let pinBuf='',pinMode='',pinTmp='',pinTarget='';
 
-let activeTag = 'all';
-let editId = null;
-let currentTags = [];
-let selectedEmoji = '🗂';
-let currentRole = null; // 'host' | 'guest'
+const EMOJIS=['🤖','💬','🎨','✍️','🧠','🎵','🎬','💰','🛠','📚','🎓','💻','🔬','🏥','🎯','📊','🌐','🚀','🔍','💡'];
+const CATS=[
+  {l:'💬 AI對話',t:['AI對話','Chatbot','LLM']},
+  {l:'🎨 AI繪圖',t:['AI繪圖','Image Generation']},
+  {l:'✍️ AI寫作',t:['AI寫作','Writing','文案']},
+  {l:'🧠 AI分析',t:['AI分析','Analytics','Data']},
+  {l:'🎵 AI音樂',t:['AI音樂','Music Generation']},
+  {l:'🎬 AI影片',t:['AI影片','Video Generation']},
+  {l:'💰 AI金融',t:['AI金融','Finance','投資']},
+  {l:'🛠 AI工具',t:['AI工具','Tool','Utility']},
+  {l:'📚 AI教育',t:['AI教育','Education','Learning','課程']},
+  {l:'🎓 AI語言',t:['AI語言','Language','翻譯','Translation']},
+  {l:'💻 AI程式',t:['AI程式','Coding','Code Generation']},
+  {l:'🤖 AI代理',t:['AI代理','Agent','Automation']},
+  {l:'🔬 AI研究',t:['AI研究','Research','論文']},
+  {l:'🏥 AI醫療',t:['AI醫療','Health','Medical']},
+  {l:'🎯 AI行銷',t:['AI行銷','Marketing','SEO']},
+];
+const RULES=[
+  {kw:['chatgpt','gpt','claude','gemini','llm','對話','chat'],t:['AI對話','LLM']},
+  {kw:['midjourney','stable diffusion','dall','繪圖','image','drawing'],t:['AI繪圖','Image Generation']},
+  {kw:['write','writing','copy','文案','寫作','jasper'],t:['AI寫作','Writing']},
+  {kw:['analytics','data','分析','analysis','dashboard'],t:['AI分析','Analytics']},
+  {kw:['music','suno','音樂','udio'],t:['AI音樂','Music Generation']},
+  {kw:['video','影片','runway','sora','heygen'],t:['AI影片','Video Generation']},
+  {kw:['finance','stock','投資','金融','trading'],t:['AI金融','Finance']},
+  {kw:['tool','utility','工具','helper'],t:['AI工具','Tool']},
+  {kw:['learn','course','教育','education','study'],t:['AI教育','Education']},
+  {kw:['translate','language','翻譯','語言'],t:['AI語言','Language']},
+  {kw:['code','coding','github','程式','developer'],t:['AI程式','Coding']},
+  {kw:['agent','automation','自動','workflow'],t:['AI代理','Agent']},
+  {kw:['research','論文','paper','academic'],t:['AI研究','Research']},
+  {kw:['health','medical','醫療','健康'],t:['AI醫療','Health']},
+  {kw:['marketing','seo','行銷','social'],t:['AI行銷','Marketing']},
+];
 
-function saveApps() { localStorage.setItem('applib_apps', JSON.stringify(apps)); }
-function saveSettings() {
-  settings.guestPinRequired = document.getElementById('sGuestPinRequired').checked;
-  localStorage.setItem('applib_settings', JSON.stringify(settings));
-  const sec = document.getElementById('guestPinSection');
-  sec.style.display = settings.guestPinRequired ? '' : 'none';
+// ── UTILS ──
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+let _t;
+function toast(msg,type='ok'){
+  const el=document.getElementById('toast');
+  el.textContent=(type==='ok'?'✅ ':'❌ ')+msg;
+  el.className='show '+type;
+  clearTimeout(_t);
+  _t=setTimeout(()=>el.className='',2800);
+}
+async function sha(s){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s+'_yal_v1'));
+  return[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function localClassify(name,url,desc){
+  const txt=[name,url,desc].join(' ').toLowerCase();
+  const res=new Set();
+  RULES.forEach(r=>{if(r.kw.some(k=>txt.includes(k)))r.t.forEach(t=>res.add(t))});
+  return[...res];
 }
 
-/* ══════════════════════════════════════════
-   PIN LOGIC
-══════════════════════════════════════════ */
-let pinBuffer = '';
-let pinMode = 'unlock'; // setup | setup-confirm | unlock | change-new | change-confirm
-let pinNewTemp = '';
-let pinTargetRole = null; // 'host' | 'guest'
-
-async function hashPin(pin) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin + 'applib_salt_v2'));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+// ── DEDUP ──
+function dedupApps(){
+  const seen=new Set();
+  const before=apps.length;
+  apps=apps.filter(a=>{const k=(a.url||'').trim().toLowerCase();if(seen.has(k))return false;seen.add(k);return true});
+  if(apps.length!==before)LS.set('yal_apps',apps);
+  return before-apps.length;
+}
+function dedup(){
+  const n=dedupApps();
+  render();
+  const st=document.getElementById('ddSt');
+  st.textContent=n>0?`✓ 已移除 ${n} 個重複項目`:'✓ 沒有重複項目';
+  st.className='sst ok';
+  if(n>0)toast(`已移除 ${n} 個重複 App`);
 }
 
-function pinUpdateDots(cls) {
-  const isGuest = pinTargetRole === 'guest';
-  for (let i = 0; i < 4; i++) {
-    const d = document.getElementById('d'+i);
-    const filled = i < pinBuffer.length;
-    d.className = 'pin-dot' + (filled ? ' '+(cls||'filled')+(isGuest && !cls ? ' guest-mode' : '') : '');
+// ── PIN ──
+function dots(cls){
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('d'+i);
+    d.className='dot'+(i<pinBuf.length?' '+(cls||'on'):'');
   }
 }
-
-function selectRole(role) {
-  pinTargetRole = role;
-  currentRole = role;
-  document.getElementById('rolePicker').style.display = 'none';
-  document.getElementById('lockScreen').style.justifyContent = 'center';
-  document.getElementById('pinEntry').classList.add('visible');
-
-  const badge = document.getElementById('pinRoleBadge');
-  badge.className = 'pin-role-badge ' + role;
-  badge.textContent = role === 'host' ? '👑 Host' : '👤 Guest';
-
-  pinBuffer = ''; pinUpdateDots();
-  document.getElementById('pinError').textContent = '';
-  document.getElementById('pinForgot').style.display = 'none';
-  document.getElementById('guestSkipBtn').style.display = 'none';
-
-  const storedHost = settings.hostPin || localStorage.getItem('applib_pin'); // migrate old key
-  if (storedHost && !settings.hostPin) { settings.hostPin = storedHost; localStorage.setItem('applib_settings', JSON.stringify(settings)); }
-
-  if (role === 'host') {
-    if (!settings.hostPin) {
-      pinMode = 'setup';
-      document.getElementById('pinTitle').textContent = '設定 Host PIN';
-      document.getElementById('pinSub').textContent = '請設定 4 位數字 PIN 保護 Host 權限';
-    } else {
-      pinMode = 'unlock';
-      document.getElementById('pinTitle').textContent = '輸入 Host PIN';
-      document.getElementById('pinSub').textContent = '';
-      document.getElementById('pinForgot').style.display = '';
+function pickRole(r){
+  pinTarget=r;role=r;pinBuf='';
+  document.getElementById('rolePicker').style.display='none';
+  document.getElementById('pin-panel').classList.add('show');
+  const badge=document.getElementById('pinBadge');
+  badge.className='pin-badge '+r;
+  badge.textContent=r==='host'?'👑 Host':'👤 Guest';
+  document.getElementById('pinErr').textContent='';
+  document.getElementById('skipBtn').style.display='none';
+  document.getElementById('pinReset').style.display='none';
+  document.querySelectorAll('.nk').forEach(k=>k.style.visibility='');
+  dots();
+  if(r==='host'){
+    if(!cfg.hostPin){
+      pinMode='host-setup';
+      document.getElementById('pinTitle').textContent='設定 Host PIN';
+      document.getElementById('pinSub').textContent='請設定 4 位數字 PIN';
+    }else{
+      pinMode='host-unlock';
+      document.getElementById('pinTitle').textContent='輸入 Host PIN';
+      document.getElementById('pinSub').textContent='';
+      document.getElementById('pinReset').style.display='';
     }
-  } else {
-    // guest
-    const needPin = settings.guestPinRequired && settings.guestPin;
-    if (needPin) {
-      pinMode = 'unlock';
-      document.getElementById('pinTitle').textContent = '輸入 Guest PIN';
-      document.getElementById('pinSub').textContent = '';
-    } else {
-      // no pin needed — show skip or direct unlock
-      document.getElementById('pinTitle').textContent = '訪客登入';
-      document.getElementById('pinSub').textContent = 'Host 未設定 Guest PIN';
-      document.getElementById('guestSkipBtn').style.display = '';
-      // hide numpad dots
-      document.getElementById('pinDots').style.display = 'none';
-      document.getElementById('pinPad') && null;
-      document.querySelectorAll('.pin-key').forEach(k=>k.style.display='none');
-      return;
+  }else{
+    if(cfg.guestPinReq&&cfg.guestPin){
+      pinMode='guest-unlock';
+      document.getElementById('pinTitle').textContent='輸入 Guest PIN';
+      document.getElementById('pinSub').textContent='';
+    }else{
+      document.getElementById('pinTitle').textContent='訪客登入';
+      document.getElementById('pinSub').textContent='無需 PIN，直接進入';
+      document.getElementById('skipBtn').style.display='';
+      document.querySelectorAll('.nk').forEach(k=>k.style.visibility='hidden');
     }
   }
-
-  // ensure pad visible
-  document.getElementById('pinDots').style.display = 'flex';
-  document.querySelectorAll('.pin-key').forEach(k=>k.style.removeProperty('display'));
 }
-
-function backToRoles() {
-  document.getElementById('rolePicker').style.display = 'flex';
-  document.getElementById('lockScreen').style.justifyContent = '';
-  document.getElementById('pinEntry').classList.remove('visible');
-  pinBuffer = ''; pinTargetRole = null;
-  // restore pad visibility
-  document.getElementById('pinDots').style.display = 'flex';
-  document.querySelectorAll('.pin-key').forEach(k=>k.style.removeProperty('display'));
+function backToRoles(){
+  document.getElementById('rolePicker').style.display='';
+  document.getElementById('pin-panel').classList.remove('show');
+  document.querySelectorAll('.nk').forEach(k=>k.style.visibility='');
+  pinBuf='';role=null;
 }
-
-function pinPress(digit) {
-  if (pinBuffer.length >= 4) return;
-  pinBuffer += digit;
-  document.getElementById('pinError').textContent = '';
-  pinUpdateDots();
-  if (pinBuffer.length === 4) setTimeout(pinSubmit, 120);
+function nk(d){
+  if(pinBuf.length>=4)return;
+  pinBuf+=d;
+  document.getElementById('pinErr').textContent='';
+  dots();
+  if(pinBuf.length===4)setTimeout(checkPin,120);
 }
-
-function pinBackspace() {
-  pinBuffer = pinBuffer.slice(0, -1);
-  pinUpdateDots();
-}
-
-async function pinSubmit() {
-  const hash = await hashPin(pinBuffer);
-
-  if (pinMode === 'setup') {
-    pinNewTemp = hash; pinBuffer = '';
-    pinUpdateDots();
-    document.getElementById('pinTitle').textContent = '確認 PIN 碼';
-    document.getElementById('pinSub').textContent = '再輸入一次確認';
-    pinMode = 'setup-confirm';
+function nb(){pinBuf=pinBuf.slice(0,-1);dots();}
+async function checkPin(){
+  const h=await sha(pinBuf);
+  if(pinMode==='host-setup'){
+    pinTmp=h;pinBuf='';dots();
+    pinMode='setup-confirm';
+    document.getElementById('pinTitle').textContent='確認 PIN';
+    document.getElementById('pinSub').textContent='再輸入一次確認';
     return;
   }
-
-  if (pinMode === 'setup-confirm') {
-    if (hash === pinNewTemp) {
-      settings.hostPin = hash;
-      localStorage.setItem('applib_settings', JSON.stringify(settings));
-      pinNewTemp = ''; pinBuffer = '';
-      pinUpdateDots('success');
-      document.getElementById('pinTitle').textContent = '✓ PIN 設定完成';
-      document.getElementById('pinError').textContent = '';
-      setTimeout(unlockApp, 500);
-    } else {
-      pinBuffer = ''; pinUpdateDots('error');
-      document.getElementById('pinError').textContent = '兩次輸入不一致，請重新開始';
-      setTimeout(() => { pinUpdateDots(); document.getElementById('pinTitle').textContent = '設定 Host PIN'; pinMode = 'setup'; }, 900);
-    }
+  if(pinMode==='setup-confirm'){
+    if(h===pinTmp){cfg.hostPin=h;LS.set('yal_cfg',cfg);pinTmp='';pinBuf='';dots('ok');document.getElementById('pinTitle').textContent='✓ PIN 設定完成';setTimeout(unlock,450);}
+    else{pinBuf='';dots('err');document.getElementById('pinErr').textContent='兩次不一致，請重新輸入';setTimeout(()=>{dots();document.getElementById('pinTitle').textContent='設定 Host PIN';pinMode='host-setup';},900);}
     return;
   }
-
-  if (pinMode === 'change-new') {
-    pinNewTemp = hash; pinBuffer = '';
-    pinUpdateDots();
-    document.getElementById('pinTitle').textContent = '確認新 PIN';
-    document.getElementById('pinSub').textContent = '再輸入一次確認';
-    pinMode = 'change-confirm';
+  if(pinMode==='host-unlock'){
+    if(h===cfg.hostPin){pinBuf='';dots('ok');setTimeout(unlock,400);}
+    else{pinBuf='';dots('err');document.getElementById('pinErr').textContent='PIN 錯誤，請再試一次';setTimeout(()=>dots(),700);}
     return;
   }
-
-  if (pinMode === 'change-confirm') {
-    if (hash === pinNewTemp) {
-      if (pinTargetRole === 'host') settings.hostPin = hash;
-      else settings.guestPin = hash;
-      localStorage.setItem('applib_settings', JSON.stringify(settings));
-      pinNewTemp = ''; pinBuffer = '';
-      pinUpdateDots('success');
-      document.getElementById('pinTitle').textContent = '✓ PIN 已更新';
-      setTimeout(unlockApp, 500);
-    } else {
-      pinBuffer = ''; pinUpdateDots('error');
-      document.getElementById('pinError').textContent = '兩次輸入不一致';
-      setTimeout(() => { pinUpdateDots(); document.getElementById('pinTitle').textContent = '設定新 PIN'; pinMode = 'change-new'; }, 900);
-    }
+  if(pinMode==='guest-unlock'){
+    if(h===cfg.guestPin){pinBuf='';dots('ok');setTimeout(unlock,400);}
+    else{pinBuf='';dots('err');document.getElementById('pinErr').textContent='PIN 錯誤，請再試一次';setTimeout(()=>dots(),700);}
     return;
   }
-
-  if (pinMode === 'unlock') {
-    const stored = pinTargetRole === 'host' ? settings.hostPin : settings.guestPin;
-    if (hash === stored) {
-      pinBuffer = ''; pinUpdateDots('success');
-      setTimeout(unlockApp, 400);
-    } else {
-      pinBuffer = ''; pinUpdateDots('error');
-      document.getElementById('pinError').textContent = 'PIN 錯誤，請再試一次';
-      setTimeout(() => pinUpdateDots(), 700);
-    }
-  }
 }
-
-function unlockApp() {
-  sessionStorage.setItem('applib_role', currentRole);
-  // Re-read and auto-deduplicate by URL on every login
-  const raw = JSON.parse(localStorage.getItem('applib_apps') || '[]');
-  const seen = new Set();
-  apps = raw.filter(a => {
-    const key = (a.url || '').trim().toLowerCase();
-    if (seen.has(key)) return false;
-    seen.add(key); return true;
-  });
-  if (apps.length !== raw.length) {
-    saveApps();
-    showToast(`已自動移除 ${raw.length - apps.length} 個重複 App`);
-  }
-  document.getElementById('lockScreen').classList.add('hidden');
-  applyRoleUI();
+function unlock(){
+  const removed=dedupApps();
+  sessionStorage.setItem('yal_role',role);
+  document.getElementById('lock').classList.add('hide');
+  applyRole();
+  if(removed>0)toast(`已自動移除 ${removed} 個重複 App`);
 }
-
-function logout() {
-  currentRole = null;
-  sessionStorage.removeItem('applib_role');
-  document.getElementById('lockScreen').classList.remove('hidden');
-  document.getElementById('rolePicker').style.display = '';
-  document.getElementById('pinEntry').classList.remove('visible');
-  pinBuffer = '';
-  document.getElementById('pinDots').style.display = 'flex';
-  document.querySelectorAll('.pin-key').forEach(k=>k.style.removeProperty('display'));
+function doLogout(){
+  role=null;sessionStorage.removeItem('yal_role');
+  document.getElementById('lock').classList.remove('hide');
+  document.getElementById('rolePicker').style.display='';
+  document.getElementById('pin-panel').classList.remove('show');
+  pinBuf='';
 }
-
-function pinReset() {
-  const el = document.getElementById('pinForgot');
-  if (el.dataset.confirm !== '1') { el.dataset.confirm='1'; el.textContent='確定重設？再按一次確認'; setTimeout(()=>{el.dataset.confirm='0';el.textContent='忘記 PIN？重設';},4000); return; }
-  el.dataset.confirm='0'; el.textContent='忘記 PIN？重設';
-  delete settings.hostPin; localStorage.removeItem('applib_pin');
-  localStorage.setItem('applib_settings', JSON.stringify(settings));
-  pinBuffer = ''; pinMode = 'setup';
-  document.getElementById('pinTitle').textContent = '設定 Host PIN';
-  document.getElementById('pinSub').textContent = '請設定 4 位數字 PIN 保護 Host 權限';
-  document.getElementById('pinError').textContent = '';
-  document.getElementById('pinForgot').style.display = 'none';
-  pinUpdateDots();
+let resetN=0;
+function doReset(){
+  resetN++;
+  const el=document.getElementById('pinReset');
+  if(resetN===1){el.textContent='確定重設？再按一次確認';return;}
+  resetN=0;el.textContent='忘記 PIN？重設';
+  delete cfg.hostPin;LS.set('yal_cfg',cfg);
+  pinBuf='';pinMode='host-setup';
+  document.getElementById('pinTitle').textContent='設定 Host PIN';
+  document.getElementById('pinSub').textContent='請設定 4 位數字 PIN';
+  document.getElementById('pinErr').textContent='';
+  document.getElementById('pinReset').style.display='none';
+  dots();
 }
-
-document.addEventListener('keydown', e => {
-  if (document.getElementById('lockScreen').classList.contains('hidden')) return;
-  if (!document.getElementById('pinEntry').classList.contains('visible')) return;
-  if (e.key >= '0' && e.key <= '9') pinPress(e.key);
-  else if (e.key === 'Backspace') pinBackspace();
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('lock').classList.contains('hide'))return;
+  if(!document.getElementById('pin-panel').classList.contains('show'))return;
+  if(e.key>='0'&&e.key<='9')nk(e.key);
+  else if(e.key==='Backspace')nb();
 });
 
-/* ══════════════════════════════════════════
-   ROLE UI
-══════════════════════════════════════════ */
-function applyRoleUI() {
-  const isHost = currentRole === 'host';
-  document.querySelectorAll('.host-only-ui').forEach(el => {
-    el.style.display = isHost ? '' : 'none';
-  });
-  const pill = document.getElementById('rolePill');
-  pill.className = 'role-pill ' + currentRole;
-  pill.textContent = isHost ? '👑 Host' : '👤 Guest';
+// ── RENDER ──
+function applyRole(){
+  const isHost=role==='host';
+  document.querySelectorAll('.host-ui').forEach(el=>el.style.display=isHost?'':'none');
+  const pill=document.getElementById('rolePill');
+  pill.className='rpill '+role;
+  pill.textContent=isHost?'👑 Host':'👤 Guest';
   render();
 }
-
-/* ══════════════════════════════════════════
-   RENDER
-══════════════════════════════════════════ */
-function allTags() {
-  const counts = {};
-  visibleApps().forEach(a => (a.tags||[]).forEach(t => counts[t] = (counts[t]||0)+1));
-  return counts;
+function visApps(){return role==='host'?apps:apps.filter(a=>a.vis!==false);}
+function buildSidebar(){
+  const c={};
+  visApps().forEach(a=>(a.tags||[]).forEach(t=>c[t]=(c[t]||0)+1));
+  const total=visApps().length;
+  let h=`<div class="ti ${activeTag==='all'?'on':''}" onclick="setTag('all')"><span>🗂 全部</span><span class="tc">${total}</span></div>`;
+  Object.entries(c).sort((a,b)=>b[1]-a[1]).forEach(([t,n])=>
+    h+=`<div class="ti ${activeTag===t?'on':''}" onclick="setTag('${esc(t)}')"><span>${esc(t)}</span><span class="tc">${n}</span></div>`
+  );
+  document.getElementById('tagList').innerHTML=h;
 }
-
-function visibleApps() {
-  if (currentRole === 'host') return apps;
-  return apps.filter(a => a.visibility !== false); // default visible
-}
-
-function buildTagSidebar() {
-  const counts = allTags();
-  const total = visibleApps().length;
-  const list = document.getElementById('tagList');
-  let html = `<div class="tag-item ${activeTag==='all'?'active':''}" onclick="setTag('all')">
-    <span>🗂 全部</span><span class="tag-count">${total}</span></div>`;
-  Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t,c])=>{
-    html += `<div class="tag-item ${activeTag===t?'active':''}" onclick="setTag('${t}')">
-      <span>${t}</span><span class="tag-count">${c}</span></div>`;
+function setTag(t){activeTag=t;render();}
+function getFiltered(){
+  const q=(document.getElementById('searchInput').value||'').toLowerCase();
+  let list=visApps().filter(a=>{
+    if(activeTag!=='all'&&!(a.tags||[]).includes(activeTag))return false;
+    if(q&&!a.name.toLowerCase().includes(q)&&!(a.desc||'').toLowerCase().includes(q)&&!(a.tags||[]).some(t=>t.toLowerCase().includes(q)))return false;
+    return true;
   });
-  list.innerHTML = html;
-}
-
-function setTag(t) { activeTag = t; render(); }
-
-function filtered() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
-  let list = visibleApps().filter(a => {
-    const matchTag = activeTag === 'all' || (a.tags||[]).includes(activeTag);
-    const matchQ = !q || a.name.toLowerCase().includes(q) || (a.desc||'').toLowerCase().includes(q)
-      || (a.tags||[]).some(t=>t.toLowerCase().includes(q));
-    return matchTag && matchQ;
-  });
-  const sort = document.getElementById('sortSelect').value;
-  if (sort === 'alpha') list.sort((a,b)=>a.name.localeCompare(b.name));
-  else if (sort === 'tag') list.sort((a,b)=>(b.tags||[]).length-(a.tags||[]).length);
-  else list.sort((a,b)=>b.added-a.added);
+  if(document.getElementById('sortSel').value==='az')list.sort((a,b)=>a.name.localeCompare(b.name));
+  else list.sort((a,b)=>(b.added||0)-(a.added||0));
   return list;
 }
-
-function tagColor(t) {
-  const c = CATEGORY_COLORS[t];
-  return c ? `color:${c[0]};background:${c[1]}` : 'color:#a89fff;background:rgba(108,99,255,.18)';
+function tclr(t){
+  const m={'AI對話':'#a89fff,rgba(108,99,255,.18)','AI繪圖':'#f9a8d4,rgba(244,114,182,.15)','AI寫作':'#86efac,rgba(74,222,128,.12)','AI分析':'#38bdf8,rgba(56,189,248,.12)','AI音樂':'#fb923c,rgba(251,146,60,.12)','AI影片':'#f87171,rgba(248,113,113,.12)','AI金融':'#ffd700,rgba(255,215,0,.1)','AI工具':'#a78bfa,rgba(167,139,250,.15)','AI教育':'#34d399,rgba(52,211,153,.12)','AI語言':'#60a5fa,rgba(96,165,250,.12)','AI程式':'#4ade80,rgba(74,222,128,.12)','AI代理':'#c084fc,rgba(192,132,252,.12)','AI研究':'#e879f9,rgba(232,121,249,.12)','AI醫療':'#2dd4bf,rgba(45,212,191,.12)','AI行銷':'#fb7185,rgba(251,113,133,.12)'};
+  const v=m[t];if(v){const[c,b]=v.split(',');return`color:${c};background:${b}`;}
+  return'color:#a89fff;background:rgba(108,99,255,.18)';
 }
-
-function render() {
-  buildTagSidebar();
-  const list = filtered();
-  const isHost = currentRole === 'host';
-  document.getElementById('countLabel').textContent = `共 ${list.length} 個 App`;
-  const grid = document.getElementById('grid');
-  const empty = document.getElementById('empty');
-  if (!list.length) {
-    grid.innerHTML = '';
-    empty.style.display = '';
-    document.getElementById('emptyMsg').innerHTML = isHost
-      ? '還沒有任何 App<br>點右上角「+ 新增 App」開始吧'
-      : '目前沒有公開的 App';
+function render(){
+  buildSidebar();
+  const list=getFiltered();
+  const isHost=role==='host';
+  document.getElementById('countLabel').textContent=`共 ${list.length} 個 App`;
+  const grid=document.getElementById('grid');
+  const empty=document.getElementById('emptyBox');
+  if(!list.length){
+    grid.innerHTML='';empty.style.display='';
+    document.getElementById('emptyMsg').innerHTML=isHost?'還沒有任何 AI App<br>點右上角「+ 新增 App」加入第一個工具':'目前沒有公開的 AI App';
     return;
   }
-  empty.style.display = 'none';
-
-  grid.innerHTML = list.map(a => {
-    const canDl = a.downloadable && (isHost || currentRole === 'guest');
-    const visBadge = isHost
-      ? (a.visibility === false
-          ? `<span class="perm-badge host-only-badge">🔒 Host Only</span>`
-          : `<span class="perm-badge public-badge">👥 Public</span>`)
-      : '';
-    const dlBadge = isHost
-      ? (a.downloadable
-          ? `<span class="perm-badge dl-badge">⬇️ 可下載</span>`
-          : `<span class="perm-badge nodl-badge">🚫 不可下載</span>`)
-      : '';
-    const editBtns = isHost
-      ? `<button class="icon-btn" title="編輯" onclick="openModal('${a.id}')">✏️</button>
-         <button class="icon-btn del" title="刪除" onclick="deleteApp('${a.id}',this)">🗑</button>`
-      : '';
-    const dlBtn = canDl
-      ? `<button class="dl-btn" title="下載" onclick="downloadApp('${a.id}')">⬇️</button>`
-      : '';
-    return `
-    <div class="app-card${a.visibility===false?' host-only':''}">
-      <div class="app-card-top">
-        <div class="app-emoji">${a.emoji||'🗂'}</div>
-        <div class="app-info">
-          <div class="app-title">${esc(a.name)}</div>
-          <div class="app-url" title="${esc(a.url)}">${esc(a.url)}</div>
-        </div>
-      </div>
-      ${a.desc ? `<div class="app-desc">${esc(a.desc)}</div>` : ''}
-      ${(a.tags||[]).length ? `<div class="app-tags">${a.tags.map(t=>`<button class="tag-chip" style="${tagColor(t)}" onclick="setTag('${t}')">${t}</button>`).join('')}</div>` : ''}
-      ${isHost ? `<div class="perm-badges">${visBadge}${dlBadge}</div>` : ''}
-      <div class="app-actions">
-        <button class="launch-btn" onclick="launch('${a.id}')">🚀 開啟</button>
-        ${dlBtn}${editBtns}
-      </div>
+  empty.style.display='none';
+  grid.innerHTML=list.map(a=>{
+    const tags=(a.tags||[]).map(t=>`<button class="ctag" style="${tclr(t)}" onclick="setTag('${esc(t)}')">${esc(t)}</button>`).join('');
+    const perms=isHost?`<div class="perms"><span class="pb ${a.vis===false?'priv':'pub'}">${a.vis===false?'🔒 私密':'👥 Public'}</span><span class="pb ${a.dl?'dl':'nodl'}">${a.dl?'⬇️ 可下載':'🚫 不可下載'}</span></div>`:'';
+    const dlBtn=(a.dl&&role)?`<button class="dlbtn" onclick="dlApp('${a.id}')" title="下載">⬇️</button>`:'';
+    const editBtns=isHost?`<button class="iBtn" onclick="openEdit('${a.id}')" title="編輯">✏️</button><button class="iBtn del" onclick="delApp('${a.id}',this)" title="點兩次刪除">🗑</button>`:'';
+    return`<div class="card">
+      <div class="card-top"><div class="card-emoji">${esc(a.emoji||'🤖')}</div><div class="card-info"><div class="card-name">${esc(a.name)}</div><div class="card-url">${esc(a.url)}</div></div></div>
+      ${a.desc?`<div class="card-desc">${esc(a.desc)}</div>`:''}
+      ${tags?`<div class="card-tags">${tags}</div>`:''}
+      ${perms}
+      <div class="card-actions"><button class="launch" onclick="window.open('${esc(a.url)}','_blank')">🚀 開啟</button>${dlBtn}${editBtns}</div>
     </div>`;
   }).join('');
 }
 
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-function launch(id) {
-  const a = apps.find(x=>x.id===id);
-  if (a) window.open(a.url, '_blank');
-}
-
-function deleteApp(id, btn) {
-  if (!btn) return;
-  if (btn.dataset.confirm !== '1') {
-    btn.dataset.confirm = '1';
-    btn.textContent = '✓?';
-    btn.style.color = 'var(--red)';
-    btn.title = '再按一次確認刪除';
-    setTimeout(() => {
-      if (btn.dataset.confirm === '1') {
-        btn.dataset.confirm = '0'; btn.textContent = '🗑'; btn.style.color = ''; btn.title = '刪除';
-      }
-    }, 3000);
+// ── DELETE ──
+function delApp(id,btn){
+  if(btn.dataset.ask!=='1'){
+    btn.dataset.ask='1';btn.classList.add('ask');btn.textContent='✓?';btn.title='再按一次確認刪除';
+    setTimeout(()=>{if(btn.dataset.ask==='1'){btn.dataset.ask='0';btn.classList.remove('ask');btn.textContent='🗑';btn.title='點兩次刪除';}},3000);
     return;
   }
-  apps = apps.filter(x => x.id !== id);
-  saveApps();
-  render();
-  showToast('App 已刪除');
+  apps=apps.filter(x=>x.id!==id);
+  LS.set('yal_apps',apps);render();toast('App 已刪除');
 }
 
-async function downloadApp(id) {
-  const a = apps.find(x=>x.id===id);
-  if (!a) return;
-  try {
-    const resp = await fetch(a.url);
-    if (!resp.ok) throw new Error('fetch failed');
-    const blob = await resp.blob();
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    const filename = a.url.split('/').pop() || (a.name.replace(/\s+/g,'_') + '.html');
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(()=>URL.revokeObjectURL(url), 3000);
-  } catch {
-    alert('下載失敗：無法讀取檔案（可能因跨域限制）');
+// ── DOWNLOAD ──
+async function dlApp(id){
+  const a=apps.find(x=>x.id===id);if(!a)return;
+  try{
+    const r=await fetch(a.url);if(!r.ok)throw new Error();
+    const blob=await r.blob();
+    const u=URL.createObjectURL(blob);
+    const l=Object.assign(document.createElement('a'),{href:u,download:a.url.split('/').pop()||'app.html'});
+    document.body.appendChild(l);l.click();document.body.removeChild(l);
+    setTimeout(()=>URL.revokeObjectURL(u),3000);
+    toast('下載成功');
+  }catch{toast('下載失敗（跨域限制）','er');}
+}
+
+// ── ADD/EDIT ──
+function buildEmojiRow(){
+  document.getElementById('emojiRow').innerHTML=EMOJIS.map(e=>`<div class="eo ${e===curEmoji?'on':''}" onclick="pickEmoji('${e}')">${e}</div>`).join('');
+}
+function pickEmoji(e){curEmoji=e;document.querySelectorAll('.eo').forEach(el=>el.classList.toggle('on',el.textContent===e));}
+function buildCatGrid(){
+  document.getElementById('catGrid').innerHTML=CATS.map(c=>`<button class="cg" data-tags='${JSON.stringify(c.t)}' onclick="toggleCat(this)">${c.l}</button>`).join('');
+  hlCats();
+}
+function hlCats(){document.querySelectorAll('.cg').forEach(el=>{const t=JSON.parse(el.dataset.tags);el.classList.toggle('on',t.some(x=>curTags.includes(x)));});}
+function toggleCat(el){
+  const t=JSON.parse(el.dataset.tags);
+  const allIn=t.every(x=>curTags.includes(x));
+  if(allIn)t.forEach(x=>{curTags=curTags.filter(c=>c!==x)});
+  else t.forEach(x=>{if(!curTags.includes(x))curTags.push(x)});
+  renderChips();hlCats();
+}
+function renderChips(){document.getElementById('chipBox').innerHTML=curTags.map(t=>`<div class="chip">${esc(t)}<button onclick="removeTag('${esc(t)}')">×</button></div>`).join('');}
+function removeTag(t){curTags=curTags.filter(x=>x!==t);renderChips();hlCats();}
+function addTagI(){const v=document.getElementById('fTag').value.trim();if(v&&!curTags.includes(v)){curTags.push(v);renderChips();hlCats();}document.getElementById('fTag').value='';}
+function suggestTags(){
+  const tags=localClassify(document.getElementById('fName').value,document.getElementById('fUrl').value,document.getElementById('fDesc').value).filter(t=>!curTags.includes(t));
+  document.getElementById('suggestBox').innerHTML=tags.slice(0,6).map(t=>`<button class="sg" onclick="addSug('${esc(t)}')">${esc(t)} +</button>`).join('');
+}
+function addSug(t){if(!curTags.includes(t))curTags.push(t);renderChips();hlCats();suggestTags();}
+
+async function aiClassify(){
+  const btn=document.getElementById('aibtn');
+  const name=document.getElementById('fName').value.trim();
+  const url=document.getElementById('fUrl').value.trim();
+  const desc=document.getElementById('fDesc').value.trim();
+  if(!name&&!url){toast('請先填入名稱或 URL','er');return;}
+  btn.disabled=true;btn.textContent='⏳ 分類中…';
+  let tags=null,src='local';
+  if(cfg.aiEnabled){
+    try{
+      const key=localStorage.getItem('yal_key');
+      const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':key,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-calls':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:120,messages:[{role:'user',content:`Classify this AI app. Return ONLY a JSON array of 2-4 tags in English and Traditional Chinese.\nName:${name}\nURL:${url}\nDesc:${desc||''}`}]})});
+      const d=await r.json();
+      const txt=d.content?.[0]?.text||'[]';
+      tags=JSON.parse(txt.match(/\[.*?\]/s)?.[0]||'[]');
+      src='claude';
+    }catch{}
   }
+  if(!tags?.length){tags=localClassify(name,url,desc);src='local';}
+  tags.forEach(t=>{if(!curTags.includes(t))curTags.push(t)});
+  renderChips();hlCats();
+  btn.disabled=false;
+  btn.textContent=src==='claude'?'✨ Claude AI 完成':'⚡ 本地規則完成';
+  setTimeout(()=>{btn.textContent='🤖 AI 自動分類';},2500);
 }
 
-/* ══════════════════════════════════════════
-   ADD / EDIT MODAL
-══════════════════════════════════════════ */
-function buildEmojiGrid() {
-  document.getElementById('emojiGrid').innerHTML = EMOJIS.map(e =>
-    `<div class="emoji-opt ${e===selectedEmoji?'selected':''}" onclick="selectEmoji('${e}')">${e}</div>`
-  ).join('');
+function resetForm(){
+  ['fUrl','fName','fDesc','fTag'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fst').textContent='';document.getElementById('fst').className='fst';
+  document.getElementById('fVis').checked=true;document.getElementById('fDl').checked=false;
+  document.getElementById('merr').className='merr';document.getElementById('merr').textContent='';
+  document.getElementById('merr').dataset.dupOk='0';
+  document.getElementById('fUrl').classList.remove('ef');document.getElementById('fName').classList.remove('ef');
+  document.getElementById('aibtn').textContent='🤖 AI 自動分類';
+  curTags=[];curEmoji='🤖';editId=null;
+  buildEmojiRow();buildCatGrid();renderChips();
+  document.getElementById('suggestBox').innerHTML='';
 }
-function selectEmoji(e) {
-  selectedEmoji = e;
-  document.querySelectorAll('.emoji-opt').forEach(el=>el.classList.toggle('selected', el.textContent===e));
+function openAdd(){resetForm();document.getElementById('addTitle').textContent='新增 App';document.getElementById('addModal').classList.add('show');setTimeout(()=>document.getElementById('fUrl').focus(),80);}
+function openEdit(id){
+  resetForm();
+  const a=apps.find(x=>x.id===id);if(!a)return;
+  editId=id;
+  document.getElementById('fUrl').value=a.url;
+  document.getElementById('fName').value=a.name;
+  document.getElementById('fDesc').value=a.desc||'';
+  document.getElementById('fVis').checked=a.vis!==false;
+  document.getElementById('fDl').checked=!!a.dl;
+  curTags=[...(a.tags||[])];curEmoji=a.emoji||'🤖';
+  document.getElementById('addTitle').textContent='編輯 App';
+  buildEmojiRow();buildCatGrid();renderChips();suggestTags();
+  document.getElementById('addModal').classList.add('show');
+}
+function closeAdd(){document.getElementById('addModal').classList.remove('show');}
+
+function showErr(msg,fid){
+  const box=document.getElementById('merr');
+  box.textContent=msg;box.className='merr show';
+  if(fid){document.getElementById(fid).classList.add('ef');document.querySelector('#addModal .modal').scrollTo({top:0,behavior:'smooth'});}
+  toast(msg.replace(/^[⚠️❌]\s*/u,''),'er');
 }
 
-function openModal(id) {
-  editId = id || null;
-  currentTags = []; selectedEmoji = '🗂';
-  ['fUrl','fName','fDesc','fTagInput'].forEach(i=>document.getElementById(i).value='');
-  document.getElementById('fetchStatus').textContent = '';
-  document.getElementById('fetchStatus').className = 'fetch-status';
-  document.getElementById('fVisibility').checked = true;
-  document.getElementById('fDownloadable').checked = false;
-  document.getElementById('modalTitle').textContent = id ? '編輯 App' : '新增 App';
-  if (id) {
-    const a = apps.find(x=>x.id===id);
-    if (a) {
-      document.getElementById('fUrl').value = a.url;
-      document.getElementById('fName').value = a.name;
-      document.getElementById('fDesc').value = a.desc||'';
-      document.getElementById('fVisibility').checked = a.visibility !== false;
-      document.getElementById('fDownloadable').checked = !!a.downloadable;
-      currentTags = [...(a.tags||[])];
-      selectedEmoji = a.emoji || '🗂';
+function saveApp(){
+  const url=document.getElementById('fUrl').value.trim();
+  const name=document.getElementById('fName').value.trim();
+  document.getElementById('fUrl').classList.remove('ef');
+  document.getElementById('fName').classList.remove('ef');
+  document.getElementById('merr').className='merr';
+
+  if(!url){showErr('⚠️ 請填入 URL（第一欄，在表單頂部）','fUrl');return;}
+  if(!name){showErr('⚠️ 請填入 App 名稱（第二欄）','fName');return;}
+
+  // Duplicate check
+  const dup=apps.find(a=>a.url.trim().toLowerCase()===url.toLowerCase()&&a.id!==editId);
+  if(dup){
+    const box=document.getElementById('merr');
+    if(box.dataset.dupOk!=='1'){
+      box.textContent=`⚠️ 此 URL 已存在於「${dup.name}」，再按一次儲存強制新增`;
+      box.className='merr show';box.dataset.dupOk='1';return;
     }
-  }
-  const eb = document.getElementById('saveError'); eb.style.display='none'; eb.dataset.confirmed='0';
-  buildEmojiGrid(); buildCategoryGrid(); renderChips(); renderSuggestTags();
-  document.getElementById('aiSourceBadge').style.display = 'none';
-  if (editId) highlightMatchedCategories();
-  document.getElementById('modalBackdrop').classList.add('open');
-  setTimeout(()=>document.getElementById('fUrl').focus(), 80);
-}
-function closeModal() { document.getElementById('modalBackdrop').classList.remove('open'); document.getElementById('saveError').style.display='none'; }
-function closeModalOutside(e) { if (e.target===document.getElementById('modalBackdrop')) closeModal(); }
-
-async function fetchTitle() {
-  const url = document.getElementById('fUrl').value.trim();
-  if (!url) return;
-  const st = document.getElementById('fetchStatus');
-  st.textContent = '讀取中…'; st.className = 'fetch-status';
-  if (url.startsWith('file:///') || !url.startsWith('http')) {
-    const parts = url.replace(/\\/g,'/').split('/');
-    const filename = parts[parts.length-1].replace(/\.[^.]+$/,'');
-    const name = filename.replace(/[-_]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-    document.getElementById('fName').value = name;
-    autoSuggestFromName(name);
-    st.textContent = '✓ 已從檔名解析名稱'; st.className = 'fetch-status ok'; return;
-  }
-  try {
-    const resp = await fetch(url, {mode:'cors'});
-    const html = await resp.text();
-    const m = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-    if (m) {
-      const name = m[1].trim();
-      document.getElementById('fName').value = name;
-      autoSuggestFromName(name);
-      st.textContent = '✓ 標題讀取成功'; st.className = 'fetch-status ok';
-    } else { st.textContent = '找不到 <title>，請手動輸入'; st.className = 'fetch-status err'; }
-  } catch {
-    try {
-      const u = new URL(url);
-      const parts = u.pathname.split('/').filter(Boolean);
-      const last = parts[parts.length-1]||u.hostname;
-      const name = last.replace(/\.[^.]+$/,'').replace(/[-_]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-      document.getElementById('fName').value = name;
-      autoSuggestFromName(name);
-      st.textContent = '⚠ 跨域限制，已從 URL 解析名稱'; st.className = 'fetch-status err';
-    } catch { st.textContent = '無法解析，請手動輸入'; st.className = 'fetch-status err'; }
-  }
-}
-
-function autoSuggestFromName(name) {
-  const lower = name.toLowerCase();
-  const suggestions = new Set();
-  Object.entries(SUGGEST_MAP).forEach(([k,v])=>{ if(lower.includes(k.toLowerCase())) v.forEach(t=>suggestions.add(t)); });
-  renderSuggestTags([...suggestions]);
-}
-function renderSuggestTags(list) {
-  const el = document.getElementById('suggestTags');
-  if (!list) { autoSuggestFromName(document.getElementById('fName').value); return; }
-  const available = list.filter(t=>!currentTags.includes(t));
-  el.innerHTML = available.length ? available.map(t=>`<button class="suggest-chip" onclick="addTag('${t}')">${t} +</button>`).join('') : '';
-}
-function addTag(t) { t=t.trim(); if(!t||currentTags.includes(t))return; currentTags.push(t); renderChips(); renderSuggestTags(); }
-function addTagFromInput() { addTag(document.getElementById('fTagInput').value.trim()); document.getElementById('fTagInput').value=''; }
-function tagKeydown(e) { if(e.key==='Enter'){e.preventDefault();addTagFromInput();} }
-function removeTag(t) { currentTags=currentTags.filter(x=>x!==t); renderChips(); renderSuggestTags(); }
-function renderChips() {
-  document.getElementById('chipList').innerHTML = currentTags.map(t=>
-    `<div class="chip">${t}<button onclick="removeTag('${t}')">×</button></div>`
-  ).join('');
-}
-
-function showFieldError(errBox, msg, fieldId) {
-  errBox.textContent = msg;
-  errBox.style.display = '';
-  // Highlight the missing field red
-  const urlEl  = document.getElementById('fUrl');
-  const nameEl = document.getElementById('fName');
-  urlEl.style.borderColor  = '';
-  nameEl.style.borderColor = '';
-  if (fieldId) document.getElementById(fieldId).style.borderColor = 'var(--red)';
-  // Scroll modal to top so user can see the highlighted field
-  document.querySelector('#modalBackdrop .modal').scrollTo({ top: 0, behavior: 'smooth' });
-  showToast(msg.replace('⚠️ ',''), 'error');
-}
-
-function saveApp() {
-  const errBox = document.getElementById('saveError');
-  try {
-    const url  = document.getElementById('fUrl').value.trim();
-    const name = document.getElementById('fName').value.trim();
-    if (!url && !name) { showFieldError(errBox, '⚠️ 請填入 URL 和 App 名稱（在表單頂部）', 'fUrl'); return; }
-    if (!url)  { showFieldError(errBox, '⚠️ 第一欄：請填入 URL 或本機路徑', 'fUrl');  return; }
-    if (!name) { showFieldError(errBox, '⚠️ 第二欄：請填入 App 名稱', 'fName'); return; }
-    errBox.style.display = 'none';
-    document.getElementById('fUrl').style.borderColor  = '';
-    document.getElementById('fName').style.borderColor = '';
-    // Warn on duplicate URL (skip check when editing same entry)
-    const duplicate = apps.find(a => a.url === url && a.id !== editId);
-    if (duplicate) {
-      errBox.textContent = `⚠️ 此 URL 已存在（${duplicate.name}），確定要重複新增嗎？再按一次儲存確認。`;
-      errBox.style.display = '';
-      errBox.dataset.confirmed = errBox.dataset.confirmed === '1' ? '0' : '1';
-      if (errBox.dataset.confirmed !== '1') return;
-      errBox.style.display = 'none';
-    }
-    const patch = {
-      url, name, emoji: selectedEmoji,
-      desc: document.getElementById('fDesc').value.trim(),
-      tags: [...currentTags],
-      visibility: document.getElementById('fVisibility').checked,
-      downloadable: document.getElementById('fDownloadable').checked,
-    };
-    if (editId) {
-      const idx = apps.findIndex(x => x.id === editId);
-      if (idx >= 0) apps[idx] = { ...apps[idx], ...patch };
-    } else {
-      apps.unshift({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,5), ...patch, added: Date.now() });
-    }
-    saveApps();
-    // Re-read from storage to confirm write succeeded
-    const verify = JSON.parse(localStorage.getItem('applib_apps') || '[]');
-    if (!verify.find(a => a.name === name)) throw new Error('寫入 localStorage 失敗');
-    apps = verify;
-    closeModal();
-    render();
-    // Fallback: force re-render after short delay in case DOM didn't update
-    setTimeout(() => {
-      apps = JSON.parse(localStorage.getItem('applib_apps') || '[]');
-      render();
-    }, 300);
-    showToast(editId ? `「${name}」已更新` : `「${name}」已新增`);
-  } catch(e) {
-    errBox.textContent = '❌ 儲存失敗：' + e.message;
-    errBox.style.display = '';
-    showToast('儲存失敗：' + e.message, 'error');
-  }
-}
-
-/* ══════════════════════════════════════════
-   SETTINGS MODAL
-══════════════════════════════════════════ */
-function openSettings() {
-  document.getElementById('sHostPin1').value = '';
-  document.getElementById('sHostPin2').value = '';
-  document.getElementById('sGuestPin1').value = '';
-  document.getElementById('sGuestPin2').value = '';
-  document.getElementById('hostPinStatus').textContent = '';
-  document.getElementById('guestPinStatus').textContent = '';
-  document.getElementById('sGuestPinRequired').checked = !!settings.guestPinRequired;
-  document.getElementById('guestPinSection').style.display = settings.guestPinRequired ? '' : 'none';
-  document.getElementById('sAiEnabled').checked = !!settings.aiEnabled;
-  document.getElementById('aiKeySection').style.display = settings.aiEnabled ? '' : 'none';
-  const storedKey = localStorage.getItem('applib_api_key');
-  document.getElementById('apiKeyStatus').textContent = storedKey ? '✓ API Key 已設定' : '';
-  document.getElementById('apiKeyStatus').className = storedKey ? 'settings-status ok' : 'settings-status';
-  document.getElementById('settingsBackdrop').classList.add('open');
-}
-function closeSettings() { document.getElementById('settingsBackdrop').classList.remove('open'); }
-
-function removeDuplicates() {
-  const before = apps.length;
-  const seen = new Set();
-  apps = apps.filter(a => {
-    const key = a.url.trim().toLowerCase();
-    if (seen.has(key)) return false;
-    seen.add(key); return true;
-  });
-  saveApps(); render();
-  const removed = before - apps.length;
-  const st = document.getElementById('dedupStatus');
-  st.textContent = removed > 0 ? `✓ 已移除 ${removed} 個重複項目` : '✓ 沒有重複項目';
-  st.className = 'settings-status ok';
-}
-function closeSettingsOutside(e) { if(e.target===document.getElementById('settingsBackdrop')) closeSettings(); }
-
-async function changeHostPin() {
-  const p1 = document.getElementById('sHostPin1').value;
-  const p2 = document.getElementById('sHostPin2').value;
-  const st = document.getElementById('hostPinStatus');
-  if (!p1||p1.length<4) { st.textContent='請輸入 4 位 PIN'; st.className='settings-status err'; return; }
-  if (p1!==p2) { st.textContent='兩次輸入不一致'; st.className='settings-status err'; return; }
-  settings.hostPin = await hashPin(p1);
-  localStorage.setItem('applib_settings', JSON.stringify(settings));
-  st.textContent='✓ Host PIN 已更新'; st.className='settings-status ok';
-  document.getElementById('sHostPin1').value=''; document.getElementById('sHostPin2').value='';
-}
-
-async function changeGuestPin() {
-  const p1 = document.getElementById('sGuestPin1').value;
-  const p2 = document.getElementById('sGuestPin2').value;
-  const st = document.getElementById('guestPinStatus');
-  if (!p1||p1.length<4) { st.textContent='請輸入 4 位 PIN'; st.className='settings-status err'; return; }
-  if (p1!==p2) { st.textContent='兩次輸入不一致'; st.className='settings-status err'; return; }
-  settings.guestPin = await hashPin(p1);
-  settings.guestPinRequired = true;
-  document.getElementById('sGuestPinRequired').checked = true;
-  document.getElementById('guestPinSection').style.display = '';
-  localStorage.setItem('applib_settings', JSON.stringify(settings));
-  st.textContent='✓ Guest PIN 已更新'; st.className='settings-status ok';
-  document.getElementById('sGuestPin1').value=''; document.getElementById('sGuestPin2').value='';
-}
-
-/* ══════════════════════════════════════════
-   SEARCH + SEED
-══════════════════════════════════════════ */
-document.getElementById('searchInput').addEventListener('input', function() {
-  document.getElementById('searchClear').style.display = this.value ? '' : 'none';
-  render();
-});
-
-let toastTimer;
-function showToast(msg, type = 'success') {
-  const t = document.getElementById('toast');
-  t.textContent = (type === 'success' ? '✅ ' : '❌ ') + msg;
-  t.className = 'show ' + type;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.className = ''; }, 2800);
-}
-
-function clearSearch() {
-  document.getElementById('searchInput').value = '';
-  document.getElementById('searchClear').style.display = 'none';
-  render();
-}
-
-function seedIfEmpty() {
-  if (apps.length) return;
-  apps = [
-    { id:'seed1', url:'cloud.html', name:'財務管理（雲端版）', emoji:'☁️', desc:'Firebase 雲端同步，支援多裝置', tags:['財務','金融','記帳'], visibility:true, downloadable:false, added:Date.now()-3000 },
-    { id:'seed2', url:'standalone.html', name:'財務管理（單機版）', emoji:'💾', desc:'完全離線，資料存在本機', tags:['財務','記帳','工具'], visibility:true, downloadable:true, added:Date.now()-2000 },
-    { id:'seed3', url:'stock-app.html', name:'股票追蹤', emoji:'📈', desc:'台股 ETF 持股管理', tags:['股票','金融','投資'], visibility:false, downloadable:false, added:Date.now()-1000 },
-  ];
-  saveApps();
-}
-
-/* ══════════════════════════════════════════
-   AI CLASSIFICATION
-══════════════════════════════════════════ */
-const PRESET_CATEGORIES = [
-  { label:'💬 AI 對話',    tags:['AI對話','Chatbot','LLM'] },
-  { label:'🎨 AI 繪圖',    tags:['AI繪圖','Image Generation','Text to Image'] },
-  { label:'✍️ AI 寫作',    tags:['AI寫作','Writing','Copywriting','文案'] },
-  { label:'🧠 AI 分析',    tags:['AI分析','Analytics','Data','Research'] },
-  { label:'🎵 AI 音樂',    tags:['AI音樂','Music Generation','Audio'] },
-  { label:'🎬 AI 影片',    tags:['AI影片','Video Generation','Text to Video'] },
-  { label:'💰 AI 金融',    tags:['AI金融','Finance','投資','FinTech'] },
-  { label:'🛠 AI 工具',    tags:['AI工具','Tool','Utility','Productivity'] },
-  { label:'📚 AI 教育',    tags:['AI教育','Education','Learning','課程'] },
-  { label:'🎓 AI 語言學習', tags:['AI語言','Language Learning','翻譯','Translation'] },
-  { label:'💻 AI 程式',    tags:['AI程式','Coding','Code Generation','開發'] },
-  { label:'🤖 AI 代理',    tags:['AI代理','Agent','Automation','Workflow'] },
-  { label:'🔬 AI 研究',    tags:['AI研究','Research','論文','Academic'] },
-  { label:'🏥 AI 醫療',    tags:['AI醫療','Health','Medical','健康'] },
-  { label:'🎯 AI 行銷',    tags:['AI行銷','Marketing','SEO','社群'] },
-];
-
-const LOCAL_RULES = [
-  { keywords:['finance','財務','money','budget','expense','income','記帳','預算','收支'], tags:['財務','Finance'] },
-  { keywords:['stock','invest','portfolio','etf','股票','投資','基金','fund'], tags:['投資','股票'] },
-  { keywords:['tool','utility','calc','converter','工具','計算','轉換'], tags:['工具','Tool'] },
-  { keywords:['todo','task','note','calendar','schedule','待辦','筆記','行事曆','排程'], tags:['生產力','Productivity'] },
-  { keywords:['game','fun','play','遊戲','娛樂','entertainment'], tags:['娛樂','Entertainment'] },
-  { keywords:['health','fitness','exercise','diet','健康','運動','醫療'], tags:['健康','Health'] },
-  { keywords:['learn','study','course','quiz','教育','學習','課程'], tags:['教育','Education'] },
-  { keywords:['shop','store','cart','商店','購物','電商'], tags:['購物','Shopping'] },
-  { keywords:['travel','map','hotel','trip','旅遊','地圖','旅行'], tags:['旅遊','Travel'] },
-  { keywords:['design','photo','image','設計','圖片','相片'], tags:['設計','Design'] },
-  { keywords:['data','chart','dashboard','analytics','數據','圖表','分析'], tags:['數據','Analytics'] },
-];
-
-function localClassify(name, url, desc) {
-  const text = [name, url, desc].join(' ').toLowerCase();
-  const matched = new Set();
-  LOCAL_RULES.forEach(rule => {
-    if (rule.keywords.some(k => text.includes(k))) {
-      rule.tags.forEach(t => matched.add(t));
-    }
-  });
-  return [...matched];
-}
-
-async function claudeClassify(name, url, desc) {
-  const key = localStorage.getItem('applib_api_key');
-  if (!key) return null;
-  const prompt = `You are classifying an app for an App Library. Given the following app info, suggest 2-4 concise category tags in both English and Traditional Chinese (繁體中文).
-
-App name: ${name}
-URL: ${url}
-Description: ${desc || '(none)'}
-
-Respond with ONLY a JSON array of tag strings, like: ["Finance","財務","Tool","工具"]
-No explanation, no markdown, just the raw JSON array.`;
-
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-      'anthropic-dangerous-direct-browser-calls': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 100,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  });
-  if (!resp.ok) throw new Error(await resp.text());
-  const data = await resp.json();
-  const text = data.content?.[0]?.text || '[]';
-  return JSON.parse(text.match(/\[.*\]/s)?.[0] || '[]');
-}
-
-async function runAIClassify() {
-  const name = document.getElementById('fName').value.trim();
-  const url  = document.getElementById('fUrl').value.trim();
-  const desc = document.getElementById('fDesc').value.trim();
-  if (!name && !url) { alert('請先填入 App 名稱或 URL'); return; }
-
-  const btn = document.getElementById('aiClassifyBtn');
-  const badge = document.getElementById('aiSourceBadge');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="ai-spin">⏳</span> 分類中…';
-  badge.style.display = 'none';
-
-  let tags = null;
-  let source = 'local';
-
-  const hasKey = !!localStorage.getItem('applib_api_key') && settings.aiEnabled;
-  if (hasKey) {
-    try {
-      tags = await claudeClassify(name, url, desc);
-      source = 'claude';
-    } catch (e) {
-      console.warn('Claude classify failed, falling back to local:', e);
-    }
-  }
-  if (!tags || !tags.length) {
-    tags = localClassify(name, url, desc);
-    source = 'local';
+    box.dataset.dupOk='0';
   }
 
-  // merge into currentTags (avoid duplicates)
-  tags.forEach(t => { if (!currentTags.includes(t)) currentTags.push(t); });
-  renderChips();
-  renderSuggestTags([]);
-  highlightMatchedCategories();
+  const patch={url,name,emoji:curEmoji,desc:document.getElementById('fDesc').value.trim(),tags:[...curTags],vis:document.getElementById('fVis').checked,dl:document.getElementById('fDl').checked};
 
-  btn.disabled = false;
-  btn.innerHTML = '🤖 AI 自動分類';
-  badge.style.display = '';
-  badge.className = 'ai-source-badge ' + source;
-  badge.textContent = source === 'claude' ? '✨ Claude AI' : '⚡ 本地規則';
-}
-
-function buildCategoryGrid() {
-  document.getElementById('categoryGrid').innerHTML = PRESET_CATEGORIES.map(c =>
-    `<button class="cat-chip" data-tags='${JSON.stringify(c.tags)}' onclick="toggleCategory(this)">${c.label}</button>`
-  ).join('');
-}
-
-function toggleCategory(el) {
-  const tags = JSON.parse(el.dataset.tags);
-  const allPresent = tags.every(t => currentTags.includes(t));
-  if (allPresent) {
-    tags.forEach(t => { currentTags = currentTags.filter(x => x !== t); });
-    el.classList.remove('selected');
-  } else {
-    tags.forEach(t => { if (!currentTags.includes(t)) currentTags.push(t); });
-    el.classList.add('selected');
+  if(editId){
+    const idx=apps.findIndex(x=>x.id===editId);
+    if(idx>=0)apps[idx]={...apps[idx],...patch};
+  }else{
+    apps.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),...patch,added:Date.now()});
   }
-  renderChips();
+
+  const ok=LS.set('yal_apps',apps);
+  if(!ok){showErr('❌ 儲存失敗：localStorage 無法寫入');return;}
+
+  // Verify
+  const check=LS.get('yal_apps');
+  if(!check||!check.find(a=>a.name===name&&a.url===url)){showErr('❌ 驗證失敗，請重試');return;}
+  apps=check;
+  closeAdd();render();
+  toast((editId?`「${name}」已更新`:`「${name}」已新增`));
 }
 
-function highlightMatchedCategories() {
-  document.querySelectorAll('.cat-chip').forEach(el => {
-    const tags = JSON.parse(el.dataset.tags);
-    const anyMatch = tags.some(t => currentTags.includes(t));
-    el.classList.toggle('selected', anyMatch);
-  });
+async function fetchT(){
+  const url=document.getElementById('fUrl').value.trim();if(!url)return;
+  const st=document.getElementById('fst');st.textContent='讀取中…';st.className='fst';
+  if(!url.startsWith('http')){
+    const parts=url.replace(/\\/g,'/').split('/');
+    const n=parts[parts.length-1].replace(/\.[^.]+$/,'').replace(/[-_]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+    document.getElementById('fName').value=n;st.textContent='✓ 已從檔名解析';st.className='fst ok';suggestTags();return;
+  }
+  try{
+    const r=await fetch(url,{mode:'cors'});const html=await r.text();
+    const m=html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    if(m){document.getElementById('fName').value=m[1].trim();st.textContent='✓ 標題讀取成功';st.className='fst ok';}
+    else{st.textContent='找不到標題，請手動輸入';st.className='fst er';}
+  }catch{
+    try{
+      const u=new URL(url);const parts=u.pathname.split('/').filter(Boolean);
+      const n=(parts[parts.length-1]||u.hostname).replace(/\.[^.]+$/,'').replace(/[-_]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+      document.getElementById('fName').value=n;st.textContent='⚠ 跨域，已從 URL 解析';st.className='fst er';
+    }catch{st.textContent='無法解析，請手動輸入';st.className='fst er';}
+  }
+  suggestTags();
 }
 
-/* Settings: AI key */
-function toggleAiSection() {
-  const enabled = document.getElementById('sAiEnabled').checked;
-  settings.aiEnabled = enabled;
-  localStorage.setItem('applib_settings', JSON.stringify(settings));
-  document.getElementById('aiKeySection').style.display = enabled ? '' : 'none';
+// ── SEARCH ──
+function onSearch(){document.getElementById('sclear').style.display=document.getElementById('searchInput').value?'':'none';render();}
+function clearSearch(){document.getElementById('searchInput').value='';document.getElementById('sclear').style.display='none';render();}
+
+// ── SETTINGS ──
+function openSettings(){
+  ['sH1','sH2','sG1','sG2','sKey'].forEach(id=>document.getElementById(id).value='');
+  ['hpSt','gpSt','ddSt'].forEach(id=>{document.getElementById(id).textContent='';document.getElementById(id).className='sst';});
+  const hasKey=!!localStorage.getItem('yal_key');
+  document.getElementById('keySt').textContent=hasKey?'✓ API Key 已設定':'';
+  document.getElementById('keySt').className=hasKey?'sst ok':'sst';
+  document.getElementById('sGReq').checked=!!cfg.guestPinReq;
+  document.getElementById('sAI').checked=!!cfg.aiEnabled;
+  document.getElementById('gpSection').style.display=cfg.guestPinReq?'':'none';
+  document.getElementById('aiSection').style.display=cfg.aiEnabled?'':'none';
+  document.getElementById('settingsModal').classList.add('show');
+}
+function closeSettings(){document.getElementById('settingsModal').classList.remove('show');}
+function saveCfg(){
+  cfg.guestPinReq=document.getElementById('sGReq').checked;
+  cfg.aiEnabled=document.getElementById('sAI').checked;
+  LS.set('yal_cfg',cfg);
+  document.getElementById('gpSection').style.display=cfg.guestPinReq?'':'none';
+  document.getElementById('aiSection').style.display=cfg.aiEnabled?'':'none';
+}
+async function setHostPin(){
+  const p1=document.getElementById('sH1').value,p2=document.getElementById('sH2').value;
+  const st=document.getElementById('hpSt');
+  if(p1.length<4){st.textContent='請輸入 4 位 PIN';st.className='sst er';return;}
+  if(p1!==p2){st.textContent='兩次輸入不一致';st.className='sst er';return;}
+  cfg.hostPin=await sha(p1);LS.set('yal_cfg',cfg);
+  st.textContent='✓ Host PIN 已更新';st.className='sst ok';
+  document.getElementById('sH1').value='';document.getElementById('sH2').value='';
+}
+async function setGuestPin(){
+  const p1=document.getElementById('sG1').value,p2=document.getElementById('sG2').value;
+  const st=document.getElementById('gpSt');
+  if(p1.length<4){st.textContent='請輸入 4 位 PIN';st.className='sst er';return;}
+  if(p1!==p2){st.textContent='兩次輸入不一致';st.className='sst er';return;}
+  cfg.guestPin=await sha(p1);cfg.guestPinReq=true;LS.set('yal_cfg',cfg);
+  st.textContent='✓ Guest PIN 已更新';st.className='sst ok';
+  document.getElementById('sG1').value='';document.getElementById('sG2').value='';
+  document.getElementById('sGReq').checked=true;
+}
+function saveKey(){
+  const k=document.getElementById('sKey').value.trim();const st=document.getElementById('keySt');
+  if(!k){st.textContent='請輸入 API Key';st.className='sst er';return;}
+  localStorage.setItem('yal_key',k);st.textContent='✓ 已儲存';st.className='sst ok';
+  document.getElementById('sKey').value='';
 }
 
-function saveApiKey() {
-  const key = document.getElementById('sApiKey').value.trim();
-  const st = document.getElementById('apiKeyStatus');
-  if (!key) { st.textContent = '請輸入 API Key'; st.className = 'settings-status err'; return; }
-  localStorage.setItem('applib_api_key', key);
-  st.textContent = '✓ API Key 已儲存'; st.className = 'settings-status ok';
-  document.getElementById('sApiKey').value = '';
-}
+document.getElementById('addModal').addEventListener('click',e=>{if(e.target===document.getElementById('addModal'))closeAdd();});
+document.getElementById('settingsModal').addEventListener('click',e=>{if(e.target===document.getElementById('settingsModal'))closeSettings();});
 
-// Migrate old PIN key
-(function migrate() {
-  const old = localStorage.getItem('applib_pin');
-  if (old && !settings.hostPin) { settings.hostPin = old; localStorage.setItem('applib_settings', JSON.stringify(settings)); }
-})();
-
-seedIfEmpty();
-
-// Restore session after page refresh
-(function restoreSession() {
-  const saved = sessionStorage.getItem('applib_role');
-  if (saved === 'host' || saved === 'guest') {
-    currentRole = saved;
-    const raw = JSON.parse(localStorage.getItem('applib_apps') || '[]');
-    const seen = new Set();
-    apps = raw.filter(a => { const k=(a.url||'').trim().toLowerCase(); if(seen.has(k))return false; seen.add(k);return true; });
-    if (apps.length !== raw.length) saveApps();
-    document.getElementById('lockScreen').classList.add('hidden');
-    applyRoleUI();
+// ── INIT ──
+(function init(){
+  // Migrate old data
+  const oldPin=localStorage.getItem('applib_pin');
+  if(oldPin&&!cfg.hostPin){cfg.hostPin=oldPin;LS.set('yal_cfg',cfg);}
+  const oldApps=localStorage.getItem('applib_apps');
+  if(oldApps&&!apps.length){
+    try{const old=JSON.parse(oldApps);if(old.length){apps=old.map(a=>({...a,vis:a.visibility??true,dl:!!a.downloadable}));LS.set('yal_apps',apps);}}catch{}
+  }
+  // Session restore
+  const saved=sessionStorage.getItem('yal_role');
+  if(saved==='host'||saved==='guest'){
+    role=saved;dedupApps();
+    document.getElementById('lock').classList.add('hide');
+    applyRole();
   }
 })();
 </script>
