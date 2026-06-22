@@ -488,8 +488,9 @@ function pickRole(r){
     if(!cfg.hostPin){pMode='setup';document.getElementById('pin-title').textContent='設定 Host PIN';document.getElementById('pin-sub').textContent='請設定 4 位數字 PIN';}
     else{pMode='unlock';document.getElementById('pin-title').textContent='輸入 Host PIN';document.getElementById('pin-sub').textContent='';document.getElementById('pin-forgot').style.display='';}
   }else{
-    if(cfg.guestPin&&cfg.guestPinHash){pMode='unlock';document.getElementById('pin-title').textContent='輸入 Guest PIN';document.getElementById('pin-sub').textContent='';}
-    else{document.getElementById('pin-title').textContent='訪客登入';document.getElementById('pin-sub').textContent='無需 PIN';document.getElementById('pin-skip').style.display='';}
+    // Guest: skip PIN panel, enter directly
+    enter();
+    return;
   }
 }
 
@@ -519,6 +520,15 @@ function enter(){
   activeTag='all';
   document.getElementById('lock').classList.add('off');
   applyRole();
+  // Guest: auto-load from Firebase if connected
+  if(role==='guest'&&fbDb&&fbReady){
+    fbDb.collection('yal').doc(_FBDOC).get().then(snap=>{
+      if(snap.exists){
+        const list=(snap.data()||{}).list||[];
+        if(list.length){setApps(list);render();}
+      }
+    }).catch(e=>console.warn('guest sync error:',e));
+  }
 }
 
 function logout(){role=null;localStorage.removeItem('yal_role');document.getElementById('lock').classList.remove('off');document.getElementById('role-picker').style.display='';document.getElementById('pin-panel').classList.remove('show');pBuf='';}
