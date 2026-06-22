@@ -206,7 +206,35 @@ main{flex:1;padding:22px}
 #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 #toast.ok{border-color:rgba(16,185,129,.4);color:#34d399}
 #toast.err{border-color:rgba(239,68,68,.4);color:var(--red)}
-@media(max-width:660px){aside{display:none}main{padding:14px}header{padding:0 14px}.role-cards{flex-direction:column}}
+.tag-bar{display:none;overflow-x:auto;gap:7px;padding:10px 14px;border-bottom:1px solid var(--border);-webkit-overflow-scrolling:touch;scrollbar-width:none;background:rgba(4,6,12,.88);position:sticky;top:60px;z-index:90}
+.tag-bar::-webkit-scrollbar{display:none}
+.tbc{flex-shrink:0;padding:5px 13px;border-radius:99px;font-size:.78rem;font-weight:600;border:1px solid var(--border);background:var(--s2);color:var(--text2);cursor:pointer;transition:.15s;white-space:nowrap}
+.tbc.on{background:rgba(124,58,237,.2);color:#c4b5fd;border-color:rgba(124,58,237,.4)}
+.add-icon{display:none}
+@media(max-width:660px){
+  aside{display:none}
+  .tag-bar{display:flex}
+  main{padding:12px}
+  .grid{grid-template-columns:1fr;gap:10px}
+  header{padding:0 12px;gap:8px;height:54px}
+  .logo-text{display:none}
+  .search-wrap{flex:1;max-width:none}
+  .role-pill{padding:4px 8px;font-size:.7rem;gap:3px}
+  .add-label{display:none}
+  .add-icon{display:inline}
+  .btn-p.btn-sm{padding:7px 10px;font-size:.88rem}
+  .btn-g.btn-sm{padding:7px 10px}
+  .ibtn{width:36px;height:36px}
+  .cname{font-size:.92rem}
+  .lbtn{padding:10px 8px;min-height:42px}
+  .ebtn,.dbtn{width:40px;height:40px}
+  .dlbtn{padding:10px 12px}
+  .role-cards{flex-direction:column}
+  .hero{padding:40px 20px 28px}
+  .brand-title{font-size:1.5rem}
+  .pin-pad{grid-template-columns:repeat(3,62px);grid-template-rows:repeat(4,62px);gap:8px}
+  .pkey{width:62px;height:62px;font-size:1.2rem}
+}
 </style>
 </head>
 <body>
@@ -291,11 +319,12 @@ main{flex:1;padding:22px}
   <div class="hright">
     <div id="rpill" class="role-pill"></div>
     <button class="ibtn host-ui" onclick="openSettings()" title="設定">⚙️</button>
-    <button class="btn btn-p btn-sm host-ui" onclick="openModal()">+ 新增 App</button>
+    <button class="btn btn-p btn-sm host-ui" onclick="openModal()"><span class="add-label">+ 新增 App</span><span class="add-icon">＋</span></button>
     <button class="btn btn-g btn-sm" onclick="logout()">🚪</button>
   </div>
 </header>
 
+<div class="tag-bar" id="tagbar"></div>
 <div class="layout">
   <aside>
     <h3>分類</h3>
@@ -518,6 +547,7 @@ function render(){
     th+=`<div class="ti ${activeTag===t?'on':''}" onclick="setTag('${t}')"><span>${t}</span><span class="tc">${c}</span></div>`;
   });
   document.getElementById('tlist').innerHTML=th;
+  const _tb=document.getElementById('tagbar');if(_tb){let tb=`<button class="tbc ${activeTag==='all'?'on':''}" onclick="setTag('all')">🗂 全部 (${vis.length})</button>`;Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t,c])=>{tb+=`<button class="tbc ${activeTag===t?'on':''}" onclick="setTag('${t}')">${t} (${c})</button>`;});_tb.innerHTML=tb;}
 
   const host=role==='host';
   const _q=document.getElementById('search').value.toLowerCase().trim();
