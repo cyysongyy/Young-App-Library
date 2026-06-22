@@ -748,7 +748,7 @@ function startSync(){
     if(!snap.exists)return;
     const cloudApps=snap.data().list||[];
     if(!cloudApps.length)return;
-    localStorage.setItem('yal_apps',JSON.stringify(cloudApps));
+    localStorage.setItem(_NS,JSON.stringify(cloudApps));
     if(role)render();
   },err=>console.warn('Firestore listen error:',err));
 }
@@ -763,7 +763,7 @@ async function pushToCloud(apps){
 // Override setApps to also sync
 const _setApps=setApps;
 function setApps(a){
-  localStorage.setItem('yal_apps',JSON.stringify(a));
+  localStorage.setItem(_NS,JSON.stringify(a));
   pushToCloud(a);
 }
 
