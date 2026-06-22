@@ -404,6 +404,8 @@ main{flex:1;padding:22px}
     <div class="sec"><h3>資料</h3>
       <div class="prow"><div><div class="prow-l">🧹 移除重複 App</div><div class="prow-d">保留相同 URL 的第一筆</div></div><button class="btn btn-g btn-sm" onclick="dedup()">執行</button></div>
       <div class="st" id="stdd"></div>
+      <div class="prow" style="margin-top:6px"><div><div class="prow-l">🏷 重整所有標籤</div><div class="prow-d">依名稱/說明自動套用新分類</div></div><button class="btn btn-g btn-sm" onclick="retag()">執行</button></div>
+      <div class="st" id="stretag"></div>
     </div>
     <div class="mfoot"><button class="btn btn-g" onclick="closeSettings()">關閉</button></div>
   </div>
@@ -765,6 +767,23 @@ function dedup(){
   const d=apps.filter(a=>{const k=(a.url||'').trim().toLowerCase();if(seen.has(k))return false;seen.add(k);return true;});
   setApps(d);render();const n=apps.length-d.length;
   document.getElementById('stdd').textContent=n>0?`✓ 已移除 ${n} 個重複`:'✓ 無重複';document.getElementById('stdd').className='st ok';
+}
+
+function retag(){
+  const MAP=[
+    {kw:['sel','社會情緒','emotion','情緒','emotional','color game','colour','emotion palette'],cat:'SEL教育'},
+    {kw:['題庫','quiz','exam','考題','測驗','國中','國小','練習','基礎英文'],cat:'國中小題庫'},
+    {kw:['行政','公文','會議','排課','學校','school'],cat:'學校行政'},
+    {kw:['finance','財務','money','budget','記帳','會計','經費','mint'],cat:'財務管理'},
+  ];
+  const apps=getApps().map(a=>{
+    const txt=[a.name,a.desc,a.url,...(a.tags||[])].join(' ').toLowerCase();
+    const matched=MAP.filter(m=>m.kw.some(k=>txt.includes(k))).map(m=>m.cat);
+    return {...a,tags:matched.length?matched:['其他']};
+  });
+  setApps(apps);render();
+  document.getElementById('stretag').textContent='✓ 已重整 '+apps.length+' 個 App 的標籤';
+  document.getElementById('stretag').className='st ok';
 }
 
 /* ── Toast ── */
