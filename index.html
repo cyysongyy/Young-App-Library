@@ -410,7 +410,7 @@ main{flex:1;padding:22px}
 </div>
 
 <script>
-const EMOJIS=['📊','💰','📈','🗂','🛠','🌐','📋','🎯','📦','🚀','🔍','💡','⚙️','🎨','📝','🔒','📱','🤖','✨','🦉','🎓','▶️'];
+const EMOJIS=['📊','💰','📈','🗂','🛠','🌐','📋','🎯','📦','🚀','🔍','💡','⚙️','🎨','📝','🔒','📱','🤖','✨','🦉','🎓','▶️','📚','🧠','💚','🌈','🎭','🫂','🤝','❤️','🏃','🌱','🚨','🛡️','🌊','🔥','🗺️','🎪','🏫','🧩','🎲','🃏'];
 const CATS=[
   {l:'💬 AI 對話',t:['AI對話','Chatbot']},{l:'🎨 AI 繪圖',t:['AI繪圖','Image Generation']},
   {l:'✍️ AI 寫作',t:['AI寫作','Writing']},{l:'🧠 AI 分析',t:['AI分析','Analytics']},
@@ -420,6 +420,11 @@ const CATS=[
   {l:'🎬 AI 影片',t:['AI影片','Video']},{l:'🎵 AI 音樂',t:['AI音樂','Music']},
   {l:'🔬 AI 研究',t:['AI研究','Research']},{l:'🏥 AI 醫療',t:['AI醫療','Health']},
   {l:'🎯 AI 行銷',t:['AI行銷','Marketing']},
+  {l:'🎓 教育',t:['教育','Education']},
+  {l:'💚 SEL 社會情緒',t:['SEL','社會情緒']},
+  {l:'📝 題庫',t:['題庫','Quiz']},
+  {l:'🚨 防災安全',t:['防災','安全','Safety']},
+  {l:'🏫 學校行政',t:['學校','行政']},
 ];
 
 /* ── State ── */
@@ -708,6 +713,9 @@ const LR=[
   {kw:['note','notion','task','生產力','筆記'],t:['生產力','Productivity']},
   {kw:['video','youtube','影片','媒體'],t:['媒體','Media']},
   {kw:['sel','情緒','社會','學習','教育'],t:['AI教育','Education']},
+  {kw:['sel','社會情緒','emotional','情緒學習'],t:['SEL','社會情緒']},
+  {kw:['題庫','quiz','exam','考題','測驗'],t:['題庫','Quiz']},
+  {kw:['防災','地震','颱風','安全','disaster','safety'],t:['防災','安全']},
 ];
 function localCls(n,u,d){const txt=[n,u,d].join(' ').toLowerCase();const r=new Set();LR.forEach(x=>{if(x.kw.some(k=>txt.includes(k)))x.t.forEach(t=>r.add(t))});return[...r]}
 
