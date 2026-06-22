@@ -421,19 +421,35 @@ const CATS=[
   {l:'🎯 AI 行銷',t:['AI行銷','Marketing']},
 ];
 
+/* ── State ── */
 let cfg={}, role=null, activeTag='all', editId=null, selEmoji='🗂', tags=[];
 
-const _NS=(function(){const p=location.pathname.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'root';const k='yal_apps_'+p;if(!localStorage.getItem(k)&&localStorage.getItem('yal_apps')){localStorage.setItem(k,localStorage.getItem('yal_apps'));}return k;})();
-const _FBDOC=(function(){return location.pathname.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'root';})();
+/* ── Per-page storage namespace ── */
+const _NS=(function(){
+  const p=location.pathname.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'root';
+  const k='yal_apps_'+p;
+  if(!localStorage.getItem(k)&&localStorage.getItem('yal_apps'))
+    localStorage.setItem(k,localStorage.getItem('yal_apps'));
+  return k;
+})();
+const _FBDOC=_NS.replace('yal_apps_','');
+
+/* ── Storage ── */
 function getApps(){return JSON.parse(localStorage.getItem(_NS)||'[]')}
-function setApps(a){localStorage.setItem(_NS,JSON.stringify(a))}
+
+let _lastWrite=0; // timestamp of last local write — blocks cloud overwrite
+function setApps(a){
+  _lastWrite=Date.now();
+  localStorage.setItem(_NS,JSON.stringify(a));
+  pushToCloud(a);
+}
+
 function loadCfg(){try{cfg=JSON.parse(localStorage.getItem('yal_cfg')||'{}')}catch{cfg={}}}
 function saveCfgFull(){localStorage.setItem('yal_cfg',JSON.stringify(cfg))}
 function saveCfg(){cfg.guestPin=document.getElementById('sgp').checked;saveCfgFull();document.getElementById('gpinsec').style.display=cfg.guestPin?'':'none'}
 
-/* PIN */
+/* ── PIN ── */
 let pBuf='',pMode='unlock',pNew='',pRole=null;
-
 async function phash(p){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(p+'yal_v1'));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 
 function pdots(cls){
@@ -453,7 +469,6 @@ function pickRole(r){
   document.getElementById('pin-err').textContent='';
   document.getElementById('pin-forgot').style.display='none';
   document.getElementById('pin-skip').style.display='none';
-  // migrate old key
   const old=localStorage.getItem('applib_pin');
   if(old&&!cfg.hostPin){cfg.hostPin=old;saveCfgFull();}
   if(r==='host'){
@@ -466,7 +481,6 @@ function pickRole(r){
 }
 
 function backToRoles(){document.getElementById('role-picker').style.display='';document.getElementById('pin-panel').classList.remove('show');pBuf='';pRole=null;}
-
 function pk(d){if(pBuf.length>=4)return;pBuf+=d;document.getElementById('pin-err').textContent='';pdots();if(pBuf.length===4)setTimeout(psubmit,120);}
 function pb(){pBuf=pBuf.slice(0,-1);pdots();}
 
@@ -514,7 +528,7 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='Backspace')pb();
 });
 
-/* ROLE UI */
+/* ── Role UI ── */
 function applyRole(){
   const h=role==='host';
   document.querySelectorAll('.host-ui').forEach(el=>el.style.display=h?'':'none');
@@ -522,43 +536,45 @@ function applyRole(){
   render();
 }
 
-/* RENDER */
-function getVisible(){const a=getApps();return role==='host'?a:a.filter(x=>x.vis!==false);}
-function getFiltered(){
+/* ── Render ── */
+function render(){
+  // Read apps ONCE — prevents sidebar/grid inconsistency
+  const apps=getApps();
+  const vis=role==='host'?apps:apps.filter(x=>x.vis!==false);
+
+  // Reset stale activeTag
+  if(activeTag!=='all'&&!vis.some(a=>(a.tags||[]).includes(activeTag)))activeTag='all';
+
+  // Sidebar
+  const counts={};vis.forEach(a=>(a.tags||[]).forEach(t=>counts[t]=(counts[t]||0)+1));
+  let th=`<div class="ti ${activeTag==='all'?'on':''}" onclick="setTag('all')"><span>🗂 全部</span><span class="tc">${vis.length}</span></div>`;
+  Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t,c])=>{
+    th+=`<div class="ti ${activeTag===t?'on':''}" onclick="setTag('${esc(t)}')"><span>${esc(t)}</span><span class="tc">${c}</span></div>`;
+  });
+  document.getElementById('tlist').innerHTML=th;
+
+  // Mobile tag bar
+  const _tb=document.getElementById('tagbar');
+  if(_tb){
+    let tb=`<button class="tbc ${activeTag==='all'?'on':''}" onclick="setTag('all')">🗂 全部 (${vis.length})</button>`;
+    Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t,c])=>{
+      tb+=`<button class="tbc ${activeTag===t?'on':''}" onclick="setTag('${esc(t)}')">${esc(t)} (${c})</button>`;
+    });
+    _tb.innerHTML=tb;
+  }
+
+  // Filter & sort from same vis array
   const q=document.getElementById('search').value.toLowerCase().trim();
   const s=document.getElementById('sort').value;
-  let list=getVisible().filter(a=>{
+  let list=vis.filter(a=>{
     const okT=activeTag==='all'||(a.tags||[]).includes(activeTag);
     const okQ=!q||a.name.toLowerCase().includes(q)||(a.desc||'').toLowerCase().includes(q)||(a.tags||[]).some(t=>t.toLowerCase().includes(q));
     return okT&&okQ;
   });
   if(s==='az')list.sort((a,b)=>a.name.localeCompare(b.name));
   else list.sort((a,b)=>b.added-a.added);
-  return list;
-}
-
-function render(){
-  const _apps=getApps();
-  const vis=role==='host'?_apps:_apps.filter(x=>x.vis!==false);
-  if(activeTag!=='all'&&!vis.some(a=>(a.tags||[]).includes(activeTag)))activeTag='all';
-  const counts={};vis.forEach(a=>(a.tags||[]).forEach(t=>counts[t]=(counts[t]||0)+1));
-  let th=`<div class="ti ${activeTag==='all'?'on':''}" onclick="setTag('all')"><span>🗂 全部</span><span class="tc">${vis.length}</span></div>`;
-  Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t,c])=>{
-    th+=`<div class="ti ${activeTag===t?'on':''}" onclick="setTag('${t}')"><span>${t}</span><span class="tc">${c}</span></div>`;
-  });
-  document.getElementById('tlist').innerHTML=th;
-  const _tb=document.getElementById('tagbar');if(_tb){let tb=`<button class="tbc ${activeTag==='all'?'on':''}" onclick="setTag('all')">🗂 全部 (${vis.length})</button>`;Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t,c])=>{tb+=`<button class="tbc ${activeTag===t?'on':''}" onclick="setTag('${t}')">${t} (${c})</button>`;});_tb.innerHTML=tb;}
 
   const host=role==='host';
-  const _q=document.getElementById('search').value.toLowerCase().trim();
-  const _s=document.getElementById('sort').value;
-  let list=vis.filter(a=>{
-    const okT=activeTag==='all'||(a.tags||[]).includes(activeTag);
-    const okQ=!_q||a.name.toLowerCase().includes(_q)||(a.desc||'').toLowerCase().includes(_q)||(a.tags||[]).some(t=>t.toLowerCase().includes(_q));
-    return okT&&okQ;
-  });
-  if(_s==='az')list.sort((a,b)=>a.name.localeCompare(b.name));
-  else list.sort((a,b)=>b.added-a.added);
   document.getElementById('count').textContent=`共 ${list.length} 個 App`;
   const grid=document.getElementById('grid'),empty=document.getElementById('empty');
   if(!list.length){
@@ -572,7 +588,7 @@ function render(){
     const dls=host?`<span class="badge ${a.dl?'b-dl':'b-ndl'}">${a.dl?'⬇️ 可下載':'🚫 不可下載'}</span>`:'';
     const dlbtn=a.dl&&(host||role==='guest')?`<button class="dlbtn" onclick="dlApp('${a.id}')" title="下載">⬇️</button>`:'';
     const ebtns=host?`<button class="ebtn" onclick="openModal('${a.id}')" title="編輯">✏️</button><button class="dbtn" onclick="delApp('${a.id}')" title="刪除">🗑</button>`:'';
-    const thtml=(a.tags||[]).length?`<div class="ctags">${a.tags.map(t=>`<button class="tchip" onclick="setTag('${t}')">${t}</button>`).join('')}</div>`:'';
+    const thtml=(a.tags||[]).length?`<div class="ctags">${a.tags.map(t=>`<button class="tchip" onclick="setTag('${esc(t)}')">${esc(t)}</button>`).join('')}</div>`:'';
     return `<div class="card${a.vis===false?' priv':''}">
       <div class="cstrip"></div>
       <div class="cbody">
@@ -589,7 +605,7 @@ function render(){
   }).join('');
 }
 
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function setTag(t){activeTag=t;render()}
 function onSearch(){document.getElementById('sc').style.display=document.getElementById('search').value?'':'none';render()}
 function clearSearch(){document.getElementById('search').value='';document.getElementById('sc').style.display='none';render()}
@@ -599,7 +615,11 @@ function launch(id){
   window.open(a.url,'_blank','noopener,noreferrer');
 }
 
-function delApp(id){setApps(getApps().filter(x=>x.id!==id));render();toast('App 已刪除');}
+function delApp(id){
+  setApps(getApps().filter(x=>x.id!==id));
+  render();
+  toast('App 已刪除');
+}
 
 async function dlApp(id){
   const a=getApps().find(x=>x.id===id);if(!a)return;
@@ -607,11 +627,12 @@ async function dlApp(id){
     const r=await fetch(a.url);if(!r.ok)throw 0;
     const blob=await r.blob();const url=URL.createObjectURL(blob);
     const l=document.createElement('a');l.href=url;l.download=a.url.split('/').pop()||a.name;
-    document.body.appendChild(l);l.click();document.body.removeChild(l);setTimeout(()=>URL.revokeObjectURL(url),3000);
+    document.body.appendChild(l);l.click();document.body.removeChild(l);
+    setTimeout(()=>URL.revokeObjectURL(url),3000);
   }catch{toast('下載失敗（可能因跨域限制）','err')}
 }
 
-/* MODAL */
+/* ── Modal ── */
 function openModal(id){
   editId=id||null;tags=[];selEmoji='🗂';
   ['furl','fname','fdesc','ftag'].forEach(i=>document.getElementById(i).value='');
@@ -639,14 +660,24 @@ function toggleCat(el){const ct=JSON.parse(el.dataset.tags);const all=ct.every(t
 
 function addTag(){const v=document.getElementById('ftag').value.trim();if(v&&!tags.includes(v)){tags.push(v);renderChips();buildCats();}document.getElementById('ftag').value=''}
 function removeTag(t){tags=tags.filter(x=>x!==t);renderChips();buildCats()}
-function renderChips(){document.getElementById('chips').innerHTML=tags.map(t=>`<div class="chip">${t}<button onclick="removeTag('${t}')">×</button></div>`).join('')}
+function renderChips(){document.getElementById('chips').innerHTML=tags.map(t=>`<div class="chip">${esc(t)}<button onclick="removeTag('${esc(t)}')">×</button></div>`).join('')}
 
 async function fetchTitle(){
   const url=document.getElementById('furl').value.trim();if(!url)return;
   const st=document.getElementById('fst');st.textContent='讀取中…';st.className='fst';
-  if(!url.startsWith('http')){const n=url.replace(/\\/g,'/').split('/').pop().replace(/\.[^.]+$/,'').replace(/[-_]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());document.getElementById('fname').value=n;st.textContent='✓ 已從路徑解析';st.className='fst ok';return;}
-  try{const r=await fetch(url,{mode:'cors'});const html=await r.text();const m=html.match(/<title[^>]*>([^<]+)<\/title>/i);if(m){document.getElementById('fname').value=m[1].trim();st.textContent='✓ 成功';st.className='fst ok';}else{st.textContent='找不到標題';st.className='fst err';}}
-  catch{try{const u=new URL(url);document.getElementById('fname').value=u.hostname;st.textContent='⚠ 已從網址解析';st.className='fst err';}catch{st.textContent='無法解析';st.className='fst err';}}
+  if(!url.startsWith('http')){
+    const n=url.replace(/\\/g,'/').split('/').pop().replace(/\.[^.]+$/,'').replace(/[-_]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+    document.getElementById('fname').value=n;st.textContent='✓ 已從路徑解析';st.className='fst ok';return;
+  }
+  try{
+    const r=await fetch(url,{mode:'cors'});const html=await r.text();
+    const m=html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    if(m){document.getElementById('fname').value=m[1].trim();st.textContent='✓ 成功';st.className='fst ok';}
+    else{st.textContent='找不到標題';st.className='fst err';}
+  }catch{
+    try{const u=new URL(url);document.getElementById('fname').value=u.hostname;st.textContent='⚠ 已從網址解析';st.className='fst err';}
+    catch{st.textContent='無法解析';st.className='fst err';}
+  }
 }
 
 function saveApp(){
@@ -661,7 +692,7 @@ function saveApp(){
   setApps(apps);closeModal();render();toast(editId?`「${name}」已更新`:`「${name}」已新增`);
 }
 
-/* AI */
+/* ── AI ── */
 const LR=[
   {kw:['finance','財務','money','budget','expense','記帳'],t:['財務','Finance']},
   {kw:['stock','invest','etf','股票','投資'],t:['投資','股票']},
@@ -671,6 +702,7 @@ const LR=[
   {kw:['design','figma','設計'],t:['設計','Design']},
   {kw:['note','notion','task','生產力','筆記'],t:['生產力','Productivity']},
   {kw:['video','youtube','影片','媒體'],t:['媒體','Media']},
+  {kw:['sel','情緒','社會','學習','教育'],t:['AI教育','Education']},
 ];
 function localCls(n,u,d){const txt=[n,u,d].join(' ').toLowerCase();const r=new Set();LR.forEach(x=>{if(x.kw.some(k=>txt.includes(k)))x.t.forEach(t=>r.add(t))});return[...r]}
 
@@ -696,11 +728,10 @@ async function claudeCls(n,u,d){
   const data=await r.json();return JSON.parse((data.content?.[0]?.text||'[]').match(/\[.*\]/s)?.[0]||'[]');
 }
 
-/* SETTINGS */
+/* ── Settings ── */
 function openSettings(){
   ['sh1','sh2','sg1','sg2'].forEach(i=>document.getElementById(i).value='');
   ['sth','stg'].forEach(i=>{document.getElementById(i).textContent='';document.getElementById(i).className='st';});
-  // Restore Firebase status display
   const saved=localStorage.getItem('yal_fb');
   if(saved&&fbReady){
     document.getElementById('fb-cfg').value=saved;
@@ -739,25 +770,23 @@ function dedup(){
   document.getElementById('stdd').textContent=n>0?`✓ 已移除 ${n} 個重複`:'✓ 無重複';document.getElementById('stdd').className='st ok';
 }
 
-/* TOAST */
+/* ── Toast ── */
 let toastT;
 function toast(msg,type='ok'){
   const t=document.getElementById('toast');t.textContent=(type==='ok'?'✅ ':'❌ ')+msg;t.className='show '+type;
   clearTimeout(toastT);toastT=setTimeout(()=>t.className='',2800);
 }
 
-/* FIREBASE SYNC */
-let fbApp=null, fbDb=null, fbUnsub=null, fbReady=false;
+/* ── Firebase ── */
+let fbApp=null,fbDb=null,fbUnsub=null,fbReady=false;
 
 function connectFirebase(){
   const raw=document.getElementById('fb-cfg').value.trim();
-  const st=document.getElementById('fb-st'), info=document.getElementById('fb-info');
+  const st=document.getElementById('fb-st'),info=document.getElementById('fb-info');
   if(!raw){st.textContent='請貼上 Firebase Config';st.className='st err';return;}
   let fbCfg;
-  try{
-    // Accept both JS object literal and JSON
-    fbCfg=JSON.parse(raw.replace(/([{,]\s*)(\w+)\s*:/g,'$1"$2":'));
-  }catch{st.textContent='Config 格式錯誤，請貼完整 JSON';st.className='st err';return;}
+  try{fbCfg=JSON.parse(raw.replace(/([{,]\s*)(\w+)\s*:/g,'$1"$2":'));}
+  catch{st.textContent='Config 格式錯誤';st.className='st err';return;}
   try{
     if(fbApp){try{fbApp.delete();}catch(e){}}
     fbApp=firebase.initializeApp(fbCfg,'yal-'+Date.now());
@@ -783,13 +812,14 @@ function disconnectFirebase(){
 
 function startSync(){
   if(!fbDb)return;
-  if(fbUnsub){fbUnsub();}
-  // Real-time listener — updates local state whenever cloud changes
+  if(fbUnsub)fbUnsub();
   fbUnsub=fbDb.collection('yal').doc(_FBDOC).onSnapshot(snap=>{
     try{
       if(!snap.exists)return;
       const cloudApps=(snap.data()||{}).list||[];
       if(!cloudApps.length)return;
+      // Block cloud overwrite for 4s after any local write
+      if(Date.now()-_lastWrite<4000)return;
       const local=localStorage.getItem(_NS)||'[]';
       if(JSON.stringify(cloudApps)===local)return;
       localStorage.setItem(_NS,JSON.stringify(cloudApps));
@@ -800,16 +830,8 @@ function startSync(){
 
 async function pushToCloud(apps){
   if(!fbDb||!fbReady)return;
-  try{
-    await fbDb.collection('yal').doc(_FBDOC).set({list:apps,updated:Date.now()});
-  }catch(e){console.warn('Firestore write error:',e);}
-}
-
-// Override setApps to also sync
-const _setApps=setApps;
-function setApps(a){
-  localStorage.setItem(_NS,JSON.stringify(a));
-  pushToCloud(a);
+  try{await fbDb.collection('yal').doc(_FBDOC).set({list:apps,updated:Date.now()});}
+  catch(e){console.warn('Firestore write error:',e);}
 }
 
 function initFirebase(){
@@ -819,23 +841,24 @@ function initFirebase(){
   connectFirebase();
 }
 
-/* SEED */
+/* ── Seed ── */
 function seed(){
   if(getApps().length)return;
+  const now=Date.now();
   setApps([
-    {id:'s1',url:'https://www.khanacademy.org',name:'Khan Academy',emoji:'📚',desc:'免費線上課程，數學、科學、程式',tags:['教育'],vis:true,dl:false,added:Date.now()-100},
-    {id:'s2',url:'https://www.duolingo.com',name:'Duolingo',emoji:'🦉',desc:'語言學習 App，每日練習',tags:['教育','語言'],vis:true,dl:false,added:Date.now()-200},
-    {id:'s3',url:'https://chat.openai.com',name:'ChatGPT',emoji:'🤖',desc:'OpenAI AI 對話助理',tags:['AI工具'],vis:true,dl:false,added:Date.now()-300},
-    {id:'s4',url:'https://claude.ai',name:'Claude',emoji:'✨',desc:'Anthropic AI，擅長分析與寫作',tags:['AI工具'],vis:true,dl:false,added:Date.now()-400},
-    {id:'s5',url:'https://www.figma.com',name:'Figma',emoji:'🎨',desc:'協作設計工具',tags:['設計','工具'],vis:true,dl:false,added:Date.now()-500},
-    {id:'s6',url:'https://notion.so',name:'Notion',emoji:'📝',desc:'筆記、資料庫、專案管理',tags:['生產力','工具'],vis:true,dl:false,added:Date.now()-600},
-    {id:'s7',url:'https://www.youtube.com',name:'YouTube',emoji:'▶️',desc:'影片平台',tags:['媒體','教育'],vis:true,dl:false,added:Date.now()-700},
-    {id:'s8',url:'https://www.mint.com',name:'Mint',emoji:'💰',desc:'個人財務管理',tags:['財務'],vis:true,dl:false,added:Date.now()-800},
+    {id:'s1',url:'https://www.khanacademy.org',name:'Khan Academy',emoji:'📚',desc:'免費線上課程，數學、科學、程式',tags:['教育'],vis:true,dl:false,added:now-100},
+    {id:'s2',url:'https://www.duolingo.com',name:'Duolingo',emoji:'🦉',desc:'語言學習 App，每日練習',tags:['教育','語言'],vis:true,dl:false,added:now-200},
+    {id:'s3',url:'https://chat.openai.com',name:'ChatGPT',emoji:'🤖',desc:'OpenAI AI 對話助理',tags:['AI工具'],vis:true,dl:false,added:now-300},
+    {id:'s4',url:'https://claude.ai',name:'Claude',emoji:'✨',desc:'Anthropic AI，擅長分析與寫作',tags:['AI工具'],vis:true,dl:false,added:now-400},
+    {id:'s5',url:'https://www.figma.com',name:'Figma',emoji:'🎨',desc:'協作設計工具',tags:['設計','工具'],vis:true,dl:false,added:now-500},
+    {id:'s6',url:'https://notion.so',name:'Notion',emoji:'📝',desc:'筆記、資料庫、專案管理',tags:['生產力','工具'],vis:true,dl:false,added:now-600},
+    {id:'s7',url:'https://www.youtube.com',name:'YouTube',emoji:'▶️',desc:'影片平台',tags:['媒體','教育'],vis:true,dl:false,added:now-700},
+    {id:'s8',url:'https://www.mint.com',name:'Mint',emoji:'💰',desc:'個人財務管理',tags:['財務'],vis:true,dl:false,added:now-800},
   ]);
 }
 
+/* ── Init ── */
 window.addEventListener('pageshow',e=>{if(e.persisted&&role)render();});
-/* INIT */
 loadCfg();seed();initFirebase();
 (function init(){
   const saved=localStorage.getItem('yal_role');
