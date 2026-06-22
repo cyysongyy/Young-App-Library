@@ -436,13 +436,17 @@ const _NS=(function(){
 const _FBDOC=_NS.replace('yal_apps_','');
 
 /* ── Storage ── */
-function getApps(){return JSON.parse(localStorage.getItem(_NS)||'[]')}
+let _cache=null; // in-memory app cache — single source of truth during session
 
-let _lastWrite=0; // timestamp of last local write — blocks cloud overwrite
+function getApps(){
+  if(_cache===null) _cache=JSON.parse(localStorage.getItem(_NS)||'[]');
+  return _cache;
+}
+
 function setApps(a){
-  _lastWrite=Date.now();
-  localStorage.setItem(_NS,JSON.stringify(a));
-  pushToCloud(a);
+  _cache=a;                                 // update memory immediately
+  localStorage.setItem(_NS,JSON.stringify(a)); // persist
+  pushToCloud(a);                           // backup to cloud
 }
 
 function loadCfg(){try{cfg=JSON.parse(localStorage.getItem('yal_cfg')||'{}')}catch{cfg={}}}
