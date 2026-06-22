@@ -412,19 +412,11 @@ main{flex:1;padding:22px}
 <script>
 const EMOJIS=['📊','💰','📈','🗂','🛠','🌐','📋','🎯','📦','🚀','🔍','💡','⚙️','🎨','📝','🔒','📱','🤖','✨','🦉','🎓','▶️','📚','🧠','💚','🌈','🎭','🫂','🤝','❤️','🏃','🌱','🚨','🛡️','🌊','🔥','🗺️','🎪','🏫','🧩','🎲','🃏'];
 const CATS=[
-  {l:'💬 AI 對話',t:['AI對話','Chatbot']},{l:'🎨 AI 繪圖',t:['AI繪圖','Image Generation']},
-  {l:'✍️ AI 寫作',t:['AI寫作','Writing']},{l:'🧠 AI 分析',t:['AI分析','Analytics']},
-  {l:'💻 AI 程式',t:['AI程式','Coding']},{l:'🤖 AI 代理',t:['AI代理','Agent']},
-  {l:'💰 AI 金融',t:['AI金融','Finance']},{l:'🛠 AI 工具',t:['AI工具','Tool']},
-  {l:'📚 AI 教育',t:['AI教育','Education']},{l:'🎓 語言學習',t:['語言','Language']},
-  {l:'🎬 AI 影片',t:['AI影片','Video']},{l:'🎵 AI 音樂',t:['AI音樂','Music']},
-  {l:'🔬 AI 研究',t:['AI研究','Research']},{l:'🏥 AI 醫療',t:['AI醫療','Health']},
-  {l:'🎯 AI 行銷',t:['AI行銷','Marketing']},
-  {l:'🎓 教育',t:['教育','Education']},
-  {l:'💚 SEL 社會情緒',t:['SEL','社會情緒']},
-  {l:'📝 題庫',t:['題庫','Quiz']},
-  {l:'🚨 防災安全',t:['防災','安全','Safety']},
-  {l:'🏫 學校行政',t:['學校','行政']},
+  {l:'💚 SEL教育',t:['SEL教育','SEL','社會情緒學習']},
+  {l:'📝 國中小題庫',t:['國中小題庫','題庫','Quiz']},
+  {l:'🏫 學校行政',t:['學校行政','行政']},
+  {l:'💰 財務管理',t:['財務管理','財務','Finance']},
+  {l:'🗂 其他分類',t:['其他']},
 ];
 
 /* ── State ── */
@@ -704,18 +696,10 @@ function saveApp(){
 
 /* ── AI ── */
 const LR=[
-  {kw:['finance','財務','money','budget','expense','記帳'],t:['財務','Finance']},
-  {kw:['stock','invest','etf','股票','投資'],t:['投資','股票']},
-  {kw:['tool','utility','工具','計算'],t:['工具','Tool']},
-  {kw:['education','learn','課程','教育','學習'],t:['教育','Education']},
-  {kw:['chat','gpt','claude','llm','ai','對話'],t:['AI工具','AI對話']},
-  {kw:['design','figma','設計'],t:['設計','Design']},
-  {kw:['note','notion','task','生產力','筆記'],t:['生產力','Productivity']},
-  {kw:['video','youtube','影片','媒體'],t:['媒體','Media']},
-  {kw:['sel','情緒','社會','學習','教育'],t:['AI教育','Education']},
-  {kw:['sel','社會情緒','emotional','情緒學習'],t:['SEL','社會情緒']},
-  {kw:['題庫','quiz','exam','考題','測驗'],t:['題庫','Quiz']},
-  {kw:['防災','地震','颱風','安全','disaster','safety'],t:['防災','安全']},
+  {kw:['sel','社會情緒','emotion','情緒','emotional'],t:['SEL教育','SEL']},
+  {kw:['題庫','quiz','exam','考題','測驗','國中','國小'],t:['國中小題庫','題庫']},
+  {kw:['行政','公文','會議','排課','學校'],t:['學校行政','行政']},
+  {kw:['finance','財務','money','budget','記帳','會計','經費'],t:['財務管理','財務']},
 ];
 function localCls(n,u,d){const txt=[n,u,d].join(' ').toLowerCase();const r=new Set();LR.forEach(x=>{if(x.kw.some(k=>txt.includes(k)))x.t.forEach(t=>r.add(t))});return[...r]}
 
