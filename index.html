@@ -212,23 +212,32 @@ main{flex:1;padding:22px}
 .tbc.on{background:rgba(124,58,237,.2);color:#c4b5fd;border-color:rgba(124,58,237,.4)}
 .add-icon{display:none}
 @media(max-width:660px){
-  aside{display:none}
-  .tag-bar{display:flex}
-  main{padding:12px}
+  /* Show sidebar, hide horizontal tag bar */
+  .tag-bar{display:none}
+  aside{display:block;width:120px;padding:12px 6px}
+  aside h3{font-size:.6rem;padding:0 6px}
+  .ti{font-size:.78rem;padding:5px 8px}
+  .tc{font-size:.65rem;padding:1px 5px}
+  .sort-sel{font-size:.75rem;padding:5px 6px}
+  /* Layout */
+  .layout{min-height:calc(100vh - 54px)}
+  main{padding:10px 8px}
   .grid{grid-template-columns:1fr;gap:10px}
-  header{padding:0 12px;gap:8px;height:54px}
+  /* Header */
+  header{padding:0 10px;gap:6px;height:54px}
   .logo-text{display:none}
   .search-wrap{flex:1;max-width:none}
-  .role-pill{padding:4px 8px;font-size:.7rem;gap:3px}
+  .role-pill{padding:4px 7px;font-size:.68rem;gap:3px}
   .add-label{display:none}
   .add-icon{display:inline}
   .btn-p.btn-sm{padding:7px 10px;font-size:.88rem}
   .btn-g.btn-sm{padding:7px 10px}
-  .ibtn{width:36px;height:36px}
-  .cname{font-size:.92rem}
+  .ibtn{width:34px;height:34px}
+  /* Cards */
+  .cname{font-size:.9rem}
   .lbtn{padding:10px 8px;min-height:42px}
-  .ebtn,.dbtn{width:40px;height:40px}
-  .dlbtn{padding:10px 12px}
+  .ebtn,.dbtn{width:38px;height:38px}
+  /* Lock screen */
   .role-cards{flex-direction:column}
   .hero{padding:40px 20px 28px}
   .brand-title{font-size:1.5rem}
