@@ -509,7 +509,9 @@ function getFiltered(){
 }
 
 function render(){
-  const vis=getVisible();
+  const _apps=getApps();
+  const vis=role==='host'?_apps:_apps.filter(x=>x.vis!==false);
+  if(activeTag!=='all'&&!vis.some(a=>(a.tags||[]).includes(activeTag)))activeTag='all';
   const counts={};vis.forEach(a=>(a.tags||[]).forEach(t=>counts[t]=(counts[t]||0)+1));
   let th=`<div class="ti ${activeTag==='all'?'on':''}" onclick="setTag('all')"><span>🗂 全部</span><span class="tc">${vis.length}</span></div>`;
   Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t,c])=>{
@@ -517,7 +519,16 @@ function render(){
   });
   document.getElementById('tlist').innerHTML=th;
 
-  const list=getFiltered();const host=role==='host';
+  const host=role==='host';
+  const _q=document.getElementById('search').value.toLowerCase().trim();
+  const _s=document.getElementById('sort').value;
+  let list=vis.filter(a=>{
+    const okT=activeTag==='all'||(a.tags||[]).includes(activeTag);
+    const okQ=!_q||a.name.toLowerCase().includes(_q)||(a.desc||'').toLowerCase().includes(_q)||(a.tags||[]).some(t=>t.toLowerCase().includes(_q));
+    return okT&&okQ;
+  });
+  if(_s==='az')list.sort((a,b)=>a.name.localeCompare(b.name));
+  else list.sort((a,b)=>b.added-a.added);
   document.getElementById('count').textContent=`共 ${list.length} 個 App`;
   const grid=document.getElementById('grid'),empty=document.getElementById('empty');
   if(!list.length){
@@ -745,11 +756,15 @@ function startSync(){
   if(fbUnsub){fbUnsub();}
   // Real-time listener — updates local state whenever cloud changes
   fbUnsub=fbDb.collection('yal').doc(_FBDOC).onSnapshot(snap=>{
-    if(!snap.exists)return;
-    const cloudApps=snap.data().list||[];
-    if(!cloudApps.length)return;
-    localStorage.setItem(_NS,JSON.stringify(cloudApps));
-    if(role)render();
+    try{
+      if(!snap.exists)return;
+      const cloudApps=(snap.data()||{}).list||[];
+      if(!cloudApps.length)return;
+      const local=localStorage.getItem(_NS)||'[]';
+      if(JSON.stringify(cloudApps)===local)return;
+      localStorage.setItem(_NS,JSON.stringify(cloudApps));
+      if(role)render();
+    }catch(e){console.warn('onSnapshot error:',e);}
   },err=>console.warn('Firestore listen error:',err));
 }
 
