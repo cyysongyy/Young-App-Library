@@ -394,8 +394,10 @@ const CATS=[
 
 let cfg={}, role=null, activeTag='all', editId=null, selEmoji='🗂', tags=[];
 
-function getApps(){return JSON.parse(localStorage.getItem('yal_apps')||'[]')}
-function setApps(a){localStorage.setItem('yal_apps',JSON.stringify(a))}
+const _NS=(function(){const p=location.pathname.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'root';const k='yal_apps_'+p;if(!localStorage.getItem(k)&&localStorage.getItem('yal_apps')){localStorage.setItem(k,localStorage.getItem('yal_apps'));}return k;})();
+const _FBDOC=(function(){return location.pathname.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'root';})();
+function getApps(){return JSON.parse(localStorage.getItem(_NS)||'[]')}
+function setApps(a){localStorage.setItem(_NS,JSON.stringify(a))}
 function loadCfg(){try{cfg=JSON.parse(localStorage.getItem('yal_cfg')||'{}')}catch{cfg={}}}
 function saveCfgFull(){localStorage.setItem('yal_cfg',JSON.stringify(cfg))}
 function saveCfg(){cfg.guestPin=document.getElementById('sgp').checked;saveCfgFull();document.getElementById('gpinsec').style.display=cfg.guestPin?'':'none'}
@@ -742,7 +744,7 @@ function startSync(){
   if(!fbDb)return;
   if(fbUnsub){fbUnsub();}
   // Real-time listener — updates local state whenever cloud changes
-  fbUnsub=fbDb.collection('yal').doc('apps').onSnapshot(snap=>{
+  fbUnsub=fbDb.collection('yal').doc(_FBDOC).onSnapshot(snap=>{
     if(!snap.exists)return;
     const cloudApps=snap.data().list||[];
     if(!cloudApps.length)return;
@@ -754,7 +756,7 @@ function startSync(){
 async function pushToCloud(apps){
   if(!fbDb||!fbReady)return;
   try{
-    await fbDb.collection('yal').doc('apps').set({list:apps,updated:Date.now()});
+    await fbDb.collection('yal').doc(_FBDOC).set({list:apps,updated:Date.now()});
   }catch(e){console.warn('Firestore write error:',e);}
 }
 
@@ -787,6 +789,7 @@ function seed(){
   ]);
 }
 
+window.addEventListener('pageshow',e=>{if(e.persisted&&role)render();});
 /* INIT */
 loadCfg();seed();initFirebase();
 (function init(){
