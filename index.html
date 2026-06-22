@@ -393,9 +393,10 @@ main{flex:1;padding:22px}
     <div class="sec"><h3>☁️ Firebase 雲端同步</h3>
       <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px;line-height:1.6">貼上 Firebase 設定即可讓所有裝置即時同步。<br><a href="https://console.firebase.google.com/" target="_blank" style="color:var(--violet2)">前往 Firebase Console 免費建立專案 →</a></p>
       <div class="field" style="margin-bottom:8px"><label>Firebase Config（貼上 firebaseConfig 物件）</label><textarea id="fb-cfg" rows="6" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}'></textarea></div>
-      <div style="display:flex;gap:8px;align-items:center">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-p btn-sm" onclick="connectFirebase()">🔗 連線</button>
         <button class="btn btn-g btn-sm" onclick="disconnectFirebase()">斷線</button>
+        <button class="btn btn-g btn-sm" onclick="syncFromCloud()">⬇️ 從雲端載入</button>
         <span class="st" id="fb-st" style="margin:0"></span>
       </div>
       <div class="st" id="fb-info" style="margin-top:6px;font-size:.75rem;color:var(--muted)"></div>
@@ -811,21 +812,18 @@ function disconnectFirebase(){
 }
 
 function startSync(){
-  if(!fbDb)return;
-  if(fbUnsub)fbUnsub();
-  fbUnsub=fbDb.collection('yal').doc(_FBDOC).onSnapshot(snap=>{
-    try{
-      if(!snap.exists)return;
-      const cloudApps=(snap.data()||{}).list||[];
-      if(!cloudApps.length)return;
-      // Block cloud overwrite for 4s after any local write
-      if(Date.now()-_lastWrite<4000)return;
-      const local=localStorage.getItem(_NS)||'[]';
-      if(JSON.stringify(cloudApps)===local)return;
-      localStorage.setItem(_NS,JSON.stringify(cloudApps));
-      if(role)render();
-    }catch(e){console.warn('onSnapshot error:',e);}
-  },err=>console.warn('Firestore listen error:',err));
+  // One-way sync only: local -> cloud (no onSnapshot overwrites)
+  // Use syncFromCloud() for manual pull
+}
+
+async function syncFromCloud(){
+  if(!fbDb||!fbReady){toast('Firebase 未連線','err');return;}
+  try{
+    const snap=await fbDb.collection('yal').doc(_FBDOC).get();
+    if(!snap.exists||!((snap.data()||{}).list||[]).length){toast('雲端尚無資料','err');return;}
+    const cloudApps=snap.data().list;
+    setApps(cloudApps);render();toast('已從雲端載入 '+cloudApps.length+' 個 App');
+  }catch(e){console.warn(e);toast('同步失敗','err');}
 }
 
 async function pushToCloud(apps){
