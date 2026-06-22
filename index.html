@@ -553,8 +553,7 @@ function clearSearch(){document.getElementById('search').value='';document.getEl
 
 function launch(id){
   const a=getApps().find(x=>x.id===id);if(!a)return;
-  const l=document.createElement('a');l.href=a.url;l.target='_blank';l.rel='noopener noreferrer';
-  document.body.appendChild(l);l.click();document.body.removeChild(l);
+  window.open(a.url,'_blank','noopener,noreferrer');
 }
 
 function delApp(id){setApps(getApps().filter(x=>x.id!==id));render();toast('App 已刪除');}
@@ -746,6 +745,7 @@ function startSync(){
   fbUnsub=fbDb.collection('yal').doc('apps').onSnapshot(snap=>{
     if(!snap.exists)return;
     const cloudApps=snap.data().list||[];
+    if(!cloudApps.length)return;
     localStorage.setItem('yal_apps',JSON.stringify(cloudApps));
     if(role)render();
   },err=>console.warn('Firestore listen error:',err));
