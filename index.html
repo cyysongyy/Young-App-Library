@@ -399,16 +399,12 @@ main{flex:1;padding:22px}
         <div class="st" id="stkey"></div>
       </div>
     </div>
-    <div class="sec"><h3>☁️ Firebase 雲端同步</h3>
-      <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px;line-height:1.6">貼上 Firebase 設定即可讓所有裝置即時同步。<br><a href="https://console.firebase.google.com/" target="_blank" style="color:var(--violet2)">前往 Firebase Console 免費建立專案 →</a></p>
-      <div class="field" style="margin-bottom:8px"><label>Firebase Config（貼上 firebaseConfig 物件）</label><textarea id="fb-cfg" rows="6" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}'></textarea></div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button class="btn btn-p btn-sm" onclick="connectFirebase()">🔗 連線</button>
-        <button class="btn btn-g btn-sm" onclick="disconnectFirebase()">斷線</button>
+    <div class="sec"><h3>☁️ 雲端同步</h3>
+      <div class="prow"><div><div class="prow-l">狀態</div><div class="prow-d" id="fb-info">連線中…</div></div><span class="st ok" id="fb-st"></span></div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-g btn-sm" onclick="syncFromCloud()">⬇️ 從雲端載入</button>
-        <span class="st" id="fb-st" style="margin:0"></span>
+        <button class="btn btn-p btn-sm" onclick="pushNow()">⬆️ 推送至雲端</button>
       </div>
-      <div class="st" id="fb-info" style="margin-top:6px;font-size:.75rem;color:var(--muted)"></div>
     </div>
     <div class="sec"><h3>資料</h3>
       <div class="prow"><div><div class="prow-l">🧹 移除重複 App</div><div class="prow-d">保留相同 URL 的第一筆</div></div><button class="btn btn-g btn-sm" onclick="dedup()">執行</button></div>
@@ -751,10 +747,9 @@ function openSettings(){
   ['sh1','sh2','sg1','sg2'].forEach(i=>document.getElementById(i).value='');
   ['sth','stg'].forEach(i=>{document.getElementById(i).textContent='';document.getElementById(i).className='st';});
   // Show shared Firebase status
-  if(fbReady){
-    document.getElementById('fb-st').textContent='✅ 已連線（共用）';document.getElementById('fb-st').className='st ok';
-    document.getElementById('fb-info').textContent='專案：young-app-library';
-  }
+  document.getElementById('fb-st').textContent=fbReady?'✅ 已連線':'⏳ 連線中';
+  document.getElementById('fb-st').className=fbReady?'st ok':'st';
+  document.getElementById('fb-info').textContent=fbReady?'專案：young-app-library（共用）':'自動連線中…';
   document.getElementById('sgp').checked=!!cfg.guestPin;
   document.getElementById('gpinsec').style.display=cfg.guestPin?'':'none';
   document.getElementById('sai').checked=!!cfg.aiEnabled;
@@ -844,6 +839,14 @@ function disconnectFirebase(){
 function startSync(){
   // One-way sync only: local -> cloud (no onSnapshot overwrites)
   // Use syncFromCloud() for manual pull
+}
+
+async function pushNow(){
+  if(!fbDb||!fbReady){toast('Firebase 未連線','err');return;}
+  try{
+    await pushToCloud(getApps());
+    toast('已推送 '+getApps().length+' 個 App 至雲端');
+  }catch(e){toast('推送失敗','err');}
 }
 
 async function syncFromCloud(){
