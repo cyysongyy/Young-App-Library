@@ -322,7 +322,7 @@ main{flex:1;padding:22px}
   <div class="logo"><div class="logo-icon">🗂</div><span class="logo-text">Young <span>APP</span> Library</span></div>
   <div class="search-wrap">
     <span class="si">🔍</span>
-    <input id="search" type="text" placeholder="搜尋 App 名稱、標籤…" oninput="onSearch()">
+    <input id="search" type="text" placeholder="搜尋 App 名稱、標籤…" oninput="onSearch()" autocomplete="off">
     <button class="sc" id="sc" onclick="clearSearch()">✕</button>
   </div>
   <div class="hright">
@@ -423,7 +423,7 @@ const CATS=[
   {l:'📝 國中小題庫',t:['國中小題庫','題庫','Quiz']},
   {l:'🏫 學校行政',t:['學校行政','行政']},
   {l:'💰 財務管理',t:['財務管理','財務','Finance']},
-  {l:'💪 健康體育',t:['健康','體育','Health','運動']},
+  {l:'💪 健康體育',t:['健康體育']},
   {l:'🗂 其他分類',t:['其他']},
 ];
 
@@ -588,7 +588,7 @@ function render(){
   const s=document.getElementById('sort').value;
   let list=vis.filter(a=>{
     const okT=activeTag==='all'||(a.tags||[]).includes(activeTag);
-    const okQ=!q||a.name.toLowerCase().includes(q)||(a.desc||'').toLowerCase().includes(q)||(a.tags||[]).some(t=>t.toLowerCase().includes(q));
+    const okQ=!q||a.name.toLowerCase().includes(q)||(a.desc||'').toLowerCase().includes(q)||(a.url||'').toLowerCase().includes(q)||(a.tags||[]).some(t=>t.toLowerCase().includes(q));
     return okT&&okQ;
   });
   if(s==='az')list.sort((a,b)=>a.name.localeCompare(b.name));
@@ -718,7 +718,7 @@ const LR=[
   {kw:['題庫','quiz','exam','考題','測驗','國中','國小'],t:['國中小題庫','題庫']},
   {kw:['行政','公文','會議','排課','學校'],t:['學校行政','行政']},
   {kw:['finance','財務','money','budget','記帳','會計','經費'],t:['財務管理','財務']},
-  {kw:['健康','體育','運動','health','fitness','sport','yoga','gym'],t:['健康','體育']},
+  {kw:['健康','體育','運動','health','fitness','sport','yoga','gym'],t:['健康體育']},
 ];
 function localCls(n,u,d){const txt=[n,u,d].join(' ').toLowerCase();const r=new Set();LR.forEach(x=>{if(x.kw.some(k=>txt.includes(k)))x.t.forEach(t=>r.add(t))});return[...r]}
 
@@ -787,7 +787,7 @@ function retag(){
     {kw:['題庫','quiz','exam','考題','測驗','國中','國小','練習','基礎英文'],cat:'國中小題庫'},
     {kw:['行政','公文','會議','排課','學校','school'],cat:'學校行政'},
     {kw:['finance','財務','money','budget','記帳','會計','經費','mint'],cat:'財務管理'},
-    {kw:['健康','體育','運動','health','fitness','sport','yoga'],cat:'健康'},
+    {kw:['健康','體育','運動','health','fitness','sport','yoga'],cat:'健康體育'},
   ];
   const apps=getApps().map(a=>{
     const txt=[a.name,a.desc,a.url,...(a.tags||[])].join(' ').toLowerCase();
