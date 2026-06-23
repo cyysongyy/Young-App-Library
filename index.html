@@ -873,17 +873,28 @@ const _SHARED_FB={
 };
 
 function initFirebase(){
-  // Auto-connect with shared config (no user setup needed)
   try{
     if(fbApp){try{fbApp.delete();}catch(e){}}
     fbApp=firebase.initializeApp(_SHARED_FB,'yal-shared');
     fbDb=firebase.firestore(fbApp);
     fbReady=true;
-    // Update settings UI if open
     const st=document.getElementById('fb-st');
     if(st){st.textContent='✅ 已連線（共用）';st.className='st ok';}
     const info=document.getElementById('fb-info');
     if(info){info.textContent='專案：young-app-library';}
+    // Auto-pull latest data from Firebase on every load
+    fbDb.collection('yal').doc(_FBDOC).get().then(snap=>{
+      if(!snap.exists)return;
+      const list=(snap.data()||{}).list||[];
+      if(!list.length)return;
+      // Only update if cloud has more apps or local is seed-only
+      const local=getApps();
+      if(list.length>local.length||(local.length<=8&&list.length>0)){
+        _cache=list;
+        localStorage.setItem(_NS,JSON.stringify(list));
+        if(role)render();
+      }
+    }).catch(e=>console.warn('auto-pull error:',e));
   }catch(e){console.warn('Firebase init error:',e);}
 }
 
