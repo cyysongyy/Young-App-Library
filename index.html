@@ -750,14 +750,10 @@ async function claudeCls(n,u,d){
 function openSettings(){
   ['sh1','sh2','sg1','sg2'].forEach(i=>document.getElementById(i).value='');
   ['sth','stg'].forEach(i=>{document.getElementById(i).textContent='';document.getElementById(i).className='st';});
-  const saved=localStorage.getItem('yal_fb');
-  if(saved&&fbReady){
-    document.getElementById('fb-cfg').value=saved;
-    try{const c=JSON.parse(saved.replace(/([{,]\s*)(\w+)\s*:/g,'$1"$2":'));document.getElementById('fb-info').textContent='專案：'+c.projectId;}catch{}
-    document.getElementById('fb-st').textContent='✅ 已連線';document.getElementById('fb-st').className='st ok';
-  }else if(saved){
-    document.getElementById('fb-cfg').value=saved;
-    document.getElementById('fb-st').textContent='未連線';document.getElementById('fb-st').className='st';
+  // Show shared Firebase status
+  if(fbReady){
+    document.getElementById('fb-st').textContent='✅ 已連線（共用）';document.getElementById('fb-st').className='st ok';
+    document.getElementById('fb-info').textContent='專案：young-app-library';
   }
   document.getElementById('sgp').checked=!!cfg.guestPin;
   document.getElementById('gpinsec').style.display=cfg.guestPin?'':'none';
@@ -866,11 +862,29 @@ async function pushToCloud(apps){
   catch(e){console.warn('Firestore write error:',e);}
 }
 
+// Hardcoded shared Firebase config — all users auto-connect
+const _SHARED_FB={
+  apiKey:"AIzaSyCIy0n9kPZPtbRJiX_r1qTp8Faw3fNS2DE",
+  authDomain:"young-app-library.firebaseapp.com",
+  projectId:"young-app-library",
+  storageBucket:"young-app-library.firebasestorage.app",
+  messagingSenderId:"538293441872",
+  appId:"1:538293441872:web:40c9b801e43015d01ac855"
+};
+
 function initFirebase(){
-  const saved=localStorage.getItem('yal_fb');
-  if(!saved)return;
-  document.getElementById('fb-cfg').value=saved;
-  connectFirebase();
+  // Auto-connect with shared config (no user setup needed)
+  try{
+    if(fbApp){try{fbApp.delete();}catch(e){}}
+    fbApp=firebase.initializeApp(_SHARED_FB,'yal-shared');
+    fbDb=firebase.firestore(fbApp);
+    fbReady=true;
+    // Update settings UI if open
+    const st=document.getElementById('fb-st');
+    if(st){st.textContent='✅ 已連線（共用）';st.className='st ok';}
+    const info=document.getElementById('fb-info');
+    if(info){info.textContent='專案：young-app-library';}
+  }catch(e){console.warn('Firebase init error:',e);}
 }
 
 /* ── Seed ── */
