@@ -888,14 +888,13 @@ function initFirebase(){
     if(st){st.textContent='✅ 已連線（共用）';st.className='st ok';}
     const info=document.getElementById('fb-info');
     if(info){info.textContent='專案：young-app-library';}
-    // Auto-pull latest data from Firebase on every load
+    // Auto-pull: update if Firebase data differs from local
     fbDb.collection('yal').doc(_FBDOC).get().then(snap=>{
       if(!snap.exists)return;
       const list=(snap.data()||{}).list||[];
       if(!list.length)return;
-      // Only update if cloud has more apps or local is seed-only
-      const local=getApps();
-      if(list.length>local.length||(local.length<=8&&list.length>0)){
+      const localJson=localStorage.getItem(_NS)||'[]';
+      if(JSON.stringify(list)!==localJson){
         _cache=list;
         localStorage.setItem(_NS,JSON.stringify(list));
         if(role)render();
