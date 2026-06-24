@@ -571,6 +571,7 @@ function render(){
   Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t,c])=>{
     th+=`<div class="ti ${activeTag===t?'on':''}" onclick="setTag('${esc(t)}')"><span>${esc(t)}</span><span class="tc">${c}</span></div>`;
   });
+  if(!counts['其他'])th+=`<div class="ti ${activeTag==='其他'?'on':''}"\ onclick="setTag('其他')"><span>🗂 其他</span><span class="tc">${counts['其他']||0}</span></div>`;
   document.getElementById('tlist').innerHTML=th;
 
   // Mobile tag bar
