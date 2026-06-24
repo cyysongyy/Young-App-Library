@@ -322,7 +322,7 @@ main{flex:1;padding:22px}
   <div class="logo"><div class="logo-icon">🗂</div><span class="logo-text">Young <span>APP</span> Library</span></div>
   <div class="search-wrap">
     <span class="si">🔍</span>
-    <input id="search" type="text" placeholder="搜尋 App 名稱、標籤…" oninput="onSearch()" autocomplete="off">
+    <input id="search" type="search" placeholder="搜尋 App 名稱、標籤…" oninput="onSearch()" autocomplete="off" spellcheck="false">
     <button class="sc" id="sc" onclick="clearSearch()">✕</button>
   </div>
   <div class="hright">
@@ -584,7 +584,8 @@ function render(){
   }
 
   // Filter & sort from same vis array
-  const q=document.getElementById('search').value.toLowerCase().trim();
+  const _sv=document.getElementById('search');if(_sv.value.startsWith('http')){_sv.value='';document.getElementById('sc').style.display='none';}
+  const q=_sv.value.toLowerCase().trim();
   const s=document.getElementById('sort').value;
   let list=vis.filter(a=>{
     const okT=activeTag==='all'||(a.tags||[]).includes(activeTag);
