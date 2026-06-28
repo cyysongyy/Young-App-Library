@@ -448,10 +448,12 @@ function getApps(){
   return _cache;
 }
 
+let _lastWrite=0;
 function setApps(a){
-  _cache=a;                                 // update memory immediately
-  localStorage.setItem(_NS,JSON.stringify(a)); // persist
-  pushToCloud(a);                           // backup to cloud
+  _lastWrite=Date.now();
+  _cache=a;
+  localStorage.setItem(_NS,JSON.stringify(a));
+  pushToCloud(a);
 }
 
 function loadCfg(){try{cfg=JSON.parse(localStorage.getItem('yal_cfg')||'{}')}catch{cfg={}}}
@@ -842,8 +844,22 @@ function disconnectFirebase(){
 }
 
 function startSync(){
-  // One-way sync only: local -> cloud (no onSnapshot overwrites)
-  // Use syncFromCloud() for manual pull
+  if(!fbDb)return;
+  if(fbUnsub)fbUnsub();
+  fbUnsub=fbDb.collection('yal').doc(_FBDOC).onSnapshot(snap=>{
+    try{
+      if(!snap.exists)return;
+      const cloudApps=(snap.data()||{}).list||[];
+      if(!cloudApps.length)return;
+      // Skip if we just wrote locally (prevents overwriting own changes)
+      if(Date.now()-_lastWrite<5000)return;
+      const localJson=localStorage.getItem(_NS)||'[]';
+      if(JSON.stringify(cloudApps)===localJson)return;
+      _cache=cloudApps;
+      localStorage.setItem(_NS,JSON.stringify(cloudApps));
+      if(role)render();
+    }catch(e){console.warn('onSnapshot:',e);}
+  },err=>console.warn('Firestore:',err));
 }
 
 async function pushNow(){
