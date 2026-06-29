@@ -939,6 +939,7 @@ function seed(){
 
 /* ── Init ── */
 window.addEventListener('pageshow',e=>{if(e.persisted&&role)render();});
+document.getElementById('search').value=''; // force clear on every load
 loadCfg();seed();initFirebase();
 (function init(){
   const saved=localStorage.getItem('yal_role');
