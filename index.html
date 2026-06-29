@@ -902,6 +902,7 @@ function initFirebase(){
     fbApp=firebase.initializeApp(_SHARED_FB,'yal-shared');
     fbDb=firebase.firestore(fbApp);
     fbReady=true;
+    startSync(); // real-time listener for cross-device sync
     const st=document.getElementById('fb-st');
     if(st){st.textContent='✅ 已連線（共用）';st.className='st ok';}
     const info=document.getElementById('fb-info');
