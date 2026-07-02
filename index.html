@@ -364,9 +364,11 @@ main{flex:1;padding:22px}
     <div class="sec"><h3>☁️ Firebase 雲端同步</h3>
       <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px;line-height:1.6">貼上 Firebase 設定即可讓所有裝置即時同步。<br><a href="https://console.firebase.google.com/" target="_blank" style="color:var(--violet2)">前往 Firebase Console 免費建立專案 →</a></p>
       <div class="field" style="margin-bottom:8px"><label>Firebase Config（貼上 firebaseConfig 物件）</label><textarea id="fb-cfg" rows="6" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}'></textarea></div>
-      <div style="display:flex;gap:8px;align-items:center">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-p btn-sm" onclick="connectFirebase()">🔗 連線</button>
         <button class="btn btn-g btn-sm" onclick="disconnectFirebase()">斷線</button>
+        <button class="btn btn-g btn-sm" onclick="manualUpload()" id="fb-upload" style="display:none">⬆️ 上傳</button>
+        <button class="btn btn-g btn-sm" onclick="manualDownload()" id="fb-download" style="display:none">⬇️ 下載</button>
         <span class="st" id="fb-st" style="margin:0"></span>
       </div>
       <div class="st" id="fb-info" style="margin-top:6px;font-size:.75rem;color:var(--muted)"></div>
@@ -760,6 +762,8 @@ function connectFirebase(){
     fbReady=true;
     st.textContent='✅ 已連線';st.className='st ok';
     info.textContent='專案：'+fbCfg.projectId;
+    document.getElementById('fb-upload').style.display='';
+    document.getElementById('fb-download').style.display='';
     startSync();
     toast('Firebase 雲端同步已啟動 ☁️');
   }catch(e){st.textContent='連線失敗：'+e.message;st.className='st err';}
@@ -771,6 +775,8 @@ function disconnectFirebase(){
   if(fbApp){try{fbApp.delete();}catch(e){}}
   fbApp=null;fbDb=null;fbReady=false;
   localStorage.removeItem('yal_fb');
+  document.getElementById('fb-upload').style.display='none';
+  document.getElementById('fb-download').style.display='none';
   document.getElementById('fb-st').textContent='已斷線';document.getElementById('fb-st').className='st';
   document.getElementById('fb-info').textContent='';
   toast('雲端同步已關閉');
@@ -805,6 +811,26 @@ async function pushCfgToCloud(){
   if(!fbDb||!fbReady)return;
   try{await fbDb.collection('yal').doc('cats').set({list:cfg.userCats||[],updated:Date.now()});}
   catch(e){console.warn('Firestore cfg write error:',e);}
+}
+
+async function manualUpload(){
+  if(!fbDb||!fbReady){toast('請先連線 Firebase','err');return;}
+  try{
+    await pushToCloud(getApps());
+    toast('⬆️ 已上傳到雲端 ✅');
+  }catch(e){toast('上傳失敗：'+e.message,'err');}
+}
+
+async function manualDownload(){
+  if(!fbDb||!fbReady){toast('請先連線 Firebase','err');return;}
+  try{
+    const snap=await fbDb.collection('yal').doc('apps').get();
+    if(!snap.exists){toast('雲端沒有資料','err');return;}
+    const cloudApps=snap.data().list||[];
+    localStorage.setItem('yal_apps',JSON.stringify(cloudApps));
+    if(role)render();
+    toast('⬇️ 已從雲端下載 '+cloudApps.length+' 個 App ✅');
+  }catch(e){toast('下載失敗：'+e.message,'err');}
 }
 
 function initFirebase(){
