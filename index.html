@@ -206,20 +206,15 @@ main{flex:1;padding:22px}
 #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 #toast.ok{border-color:rgba(16,185,129,.4);color:#34d399}
 #toast.err{border-color:rgba(239,68,68,.4);color:var(--red)}
-/* Mobile drawer */
-.mob-menu-btn{display:none;width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--s2);color:var(--text2);cursor:pointer;font-size:1.1rem;align-items:center;justify-content:center;flex-shrink:0}
-.drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;backdrop-filter:blur(2px)}
-.drawer-overlay.open{display:block}
-.mob-drawer{position:fixed;top:0;left:-260px;width:260px;height:100vh;background:var(--s1);border-right:1px solid var(--border);z-index:301;transition:left .28s cubic-bezier(.4,0,.2,1);overflow-y:auto;padding:16px 10px 30px;box-shadow:4px 0 24px rgba(0,0,0,.4)}
-.mob-drawer.open{left:0}
-.drawer-head{display:flex;align-items:center;justify-content:space-between;padding:0 8px;margin-bottom:16px}
-.drawer-title{font-size:.85rem;font-weight:800;color:var(--text)}
-.drawer-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;line-height:1}
 @media(max-width:660px){
-  aside{display:none}
-  .mob-menu-btn{display:flex}
-  main{padding:14px}
-  header{padding:0 14px}
+  aside{width:120px;padding:12px 6px;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;flex-shrink:0}
+  aside h3{font-size:.6rem;padding:0 4px}
+  .ti{font-size:.75rem;padding:5px 6px}
+  .tc{font-size:.62rem;padding:1px 5px}
+  .sort-sel{font-size:.74rem;padding:5px 6px}
+  main{padding:10px 8px}
+  .grid{grid-template-columns:1fr}
+  header{padding:0 10px}
   .role-cards{flex-direction:column}
 }
 </style>
@@ -297,7 +292,6 @@ main{flex:1;padding:22px}
 
 <!-- APP SHELL -->
 <header>
-  <button class="mob-menu-btn" onclick="openDrawer()" title="分類">☰</button>
   <div class="logo"><div class="logo-icon">🗂</div><span class="logo-text">Young <span>APP</span> Library</span></div>
   <div class="search-wrap">
     <span class="si">🔍</span>
@@ -312,19 +306,6 @@ main{flex:1;padding:22px}
   </div>
 </header>
 
-<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
-<div class="mob-drawer" id="mob-drawer">
-  <div class="drawer-head">
-    <span class="drawer-title">🗂 分類</span>
-    <button class="drawer-close" onclick="closeDrawer()">✕</button>
-  </div>
-  <div class="tag-list" id="dtlist"></div>
-  <h3 style="font-size:.67rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:0 8px;margin-bottom:8px">排序</h3>
-  <select class="sort-sel" id="dsort" onchange="document.getElementById('sort').value=this.value;render()">
-    <option value="new">最近新增</option>
-    <option value="az">名稱 A→Z</option>
-  </select>
-</div>
 <div class="layout">
   <aside>
     <h3>分類</h3>
@@ -558,9 +539,6 @@ function render(){
     th+=`<div class="ti ${activeTag===t?'on':''}" onclick="setTag('${t}')"><span>${t}</span><span class="tc">${c}</span></div>`;
   });
   document.getElementById('tlist').innerHTML=th;
-  // Mirror to mobile drawer
-  const dt=document.getElementById('dtlist');
-  if(dt)dt.innerHTML=th;
 
   const list=getFiltered();const host=role==='host';
   document.getElementById('count').textContent=`共 ${list.length} 個 App`;
@@ -594,9 +572,7 @@ function render(){
 }
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function setTag(t){activeTag=t;closeDrawer();render()}
-function openDrawer(){document.getElementById('mob-drawer').classList.add('open');document.getElementById('drawer-overlay').classList.add('open');document.body.style.overflow='hidden';}
-function closeDrawer(){document.getElementById('mob-drawer').classList.remove('open');document.getElementById('drawer-overlay').classList.remove('open');document.body.style.overflow='';}
+function setTag(t){activeTag=t;render()}
 function onSearch(){document.getElementById('sc').style.display=document.getElementById('search').value?'':'none';render()}
 function clearSearch(){document.getElementById('search').value='';document.getElementById('sc').style.display='none';render()}
 
