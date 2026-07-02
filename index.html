@@ -455,12 +455,7 @@ function pb(){pBuf=pBuf.slice(0,-1);pdots();}
 
 async function psubmit(){
   const h=await phash(pBuf);
-  if(pMode==='setup'){pNew=h;pBuf='';pdots();document.getElementById('pin-title').textContent='確認 PIN 碼';document.getElementById('pin-sub').textContent='再輸入一次確認';pMode='setup2';return;}
-  if(pMode==='setup2'){
-    if(h===pNew){cfg.hostPin=h;saveCfgFull();pBuf='';pdots('ok');document.getElementById('pin-title').textContent='✓ PIN 設定完成';setTimeout(enter,500);}
-    else{pBuf='';pdots('err');document.getElementById('pin-err').textContent='兩次不一致，請重新設定';setTimeout(()=>{pdots();document.getElementById('pin-title').textContent='設定 Host PIN';pMode='setup';},900);}
-    return;
-  }
+  if(pMode==='setup'){cfg.hostPin=h;saveCfgFull();pBuf='';pdots('ok');document.getElementById('pin-title').textContent='✓ PIN 設定完成';setTimeout(enter,500);return;}
   if(pMode==='unlock'){
     const stored=pRole==='host'?cfg.hostPin:cfg.guestPinHash;
     if(h===stored){pBuf='';pdots('ok');setTimeout(enter,400);}
