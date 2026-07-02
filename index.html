@@ -829,10 +829,12 @@ async function manualDownload(){
   }catch(e){toast('下載失敗：'+e.message,'err');}
 }
 
+const DEFAULT_FB_CFG='{"apiKey":"AIzaSyCIy0n9kPZPtbRJiX_r1qTp8Faw3fNS2DE","authDomain":"young-app-library.firebaseapp.com","projectId":"young-app-library","storageBucket":"young-app-library.firebasestorage.app","messagingSenderId":"538293441872","appId":"1:538293441872:web:40c9b801e43015d01ac855"}';
+
 function initFirebase(){
-  const saved=localStorage.getItem('yal_fb');
-  if(!saved)return;
+  const saved=localStorage.getItem('yal_fb')||DEFAULT_FB_CFG;
   document.getElementById('fb-cfg').value=saved;
+  localStorage.setItem('yal_fb',saved);
   connectFirebase();
 }
 
