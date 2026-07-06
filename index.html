@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
@@ -206,16 +206,43 @@ main{flex:1;padding:22px}
 #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 #toast.ok{border-color:rgba(16,185,129,.4);color:#34d399}
 #toast.err{border-color:rgba(239,68,68,.4);color:var(--red)}
+.tag-bar{display:none;overflow-x:auto;gap:7px;padding:10px 14px;border-bottom:1px solid var(--border);-webkit-overflow-scrolling:touch;scrollbar-width:none;background:rgba(4,6,12,.88);position:sticky;top:60px;z-index:90}
+.tag-bar::-webkit-scrollbar{display:none}
+.tbc{flex-shrink:0;padding:5px 13px;border-radius:99px;font-size:.78rem;font-weight:600;border:1px solid var(--border);background:var(--s2);color:var(--text2);cursor:pointer;transition:.15s;white-space:nowrap}
+.tbc.on{background:rgba(124,58,237,.2);color:#c4b5fd;border-color:rgba(124,58,237,.4)}
+.add-icon{display:none}
 @media(max-width:660px){
-  aside{width:120px;padding:12px 6px;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;flex-shrink:0}
-  aside h3{font-size:.6rem;padding:0 4px}
-  .ti{font-size:.75rem;padding:5px 6px}
-  .tc{font-size:.62rem;padding:1px 5px}
-  .sort-sel{font-size:.74rem;padding:5px 6px}
+  /* Show sidebar, hide horizontal tag bar */
+  .tag-bar{display:none}
+  aside{display:block;width:120px;padding:12px 6px}
+  aside h3{font-size:.6rem;padding:0 6px}
+  .ti{font-size:.78rem;padding:5px 8px}
+  .tc{font-size:.65rem;padding:1px 5px}
+  .sort-sel{font-size:.75rem;padding:5px 6px}
+  /* Layout */
+  .layout{min-height:calc(100vh - 54px)}
   main{padding:10px 8px}
-  .grid{grid-template-columns:1fr}
-  header{padding:0 10px}
+  .grid{grid-template-columns:1fr;gap:10px}
+  /* Header */
+  header{padding:0 10px;gap:6px;height:54px}
+  .logo-text{display:none}
+  .search-wrap{flex:1;max-width:none}
+  .role-pill{padding:4px 7px;font-size:.68rem;gap:3px}
+  .add-label{display:none}
+  .add-icon{display:inline}
+  .btn-p.btn-sm{padding:7px 10px;font-size:.88rem}
+  .btn-g.btn-sm{padding:7px 10px}
+  .ibtn{width:34px;height:34px}
+  /* Cards */
+  .cname{font-size:.9rem}
+  .lbtn{padding:10px 8px;min-height:42px}
+  .ebtn,.dbtn{width:38px;height:38px}
+  /* Lock screen */
   .role-cards{flex-direction:column}
+  .hero{padding:40px 20px 28px}
+  .brand-title{font-size:1.5rem}
+  .pin-pad{grid-template-columns:repeat(3,62px);grid-template-rows:repeat(4,62px);gap:8px}
+  .pkey{width:62px;height:62px;font-size:1.2rem}
 }
 </style>
 </head>
@@ -295,17 +322,18 @@ main{flex:1;padding:22px}
   <div class="logo"><div class="logo-icon">🗂</div><span class="logo-text">Young <span>APP</span> Library</span></div>
   <div class="search-wrap">
     <span class="si">🔍</span>
-    <input id="search" type="search" placeholder="搜尋 App 名稱、標籤…" oninput="onSearch()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <input id="search" type="search" placeholder="搜尋 App 名稱、標籤…" oninput="onSearch()" autocomplete="off" spellcheck="false">
     <button class="sc" id="sc" onclick="clearSearch()">✕</button>
   </div>
   <div class="hright">
     <div id="rpill" class="role-pill"></div>
     <button class="ibtn host-ui" onclick="openSettings()" title="設定">⚙️</button>
-    <button class="btn btn-p btn-sm host-ui" onclick="openModal()">+ 新增 App</button>
+    <button class="btn btn-p btn-sm host-ui" onclick="openModal()"><span class="add-label">+ 新增 App</span><span class="add-icon">＋</span></button>
     <button class="btn btn-g btn-sm" onclick="logout()">🚪</button>
   </div>
 </header>
 
+<div class="tag-bar" id="tagbar"></div>
 <div class="layout">
   <aside>
     <h3>分類</h3>
@@ -371,68 +399,69 @@ main{flex:1;padding:22px}
         <div class="st" id="stkey"></div>
       </div>
     </div>
-    <div class="sec"><h3>☁️ Firebase 雲端同步</h3>
-      <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px;line-height:1.6">貼上 Firebase 設定即可讓所有裝置即時同步。<br><a href="https://console.firebase.google.com/" target="_blank" style="color:var(--violet2)">前往 Firebase Console 免費建立專案 →</a></p>
-      <div class="field" style="margin-bottom:8px"><label>Firebase Config（貼上 firebaseConfig 物件）</label><textarea id="fb-cfg" rows="6" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}'></textarea></div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button class="btn btn-p btn-sm" onclick="connectFirebase()">🔗 連線</button>
-        <button class="btn btn-g btn-sm" onclick="disconnectFirebase()">斷線</button>
-        <button class="btn btn-g btn-sm" onclick="manualUpload()" id="fb-upload" style="display:none">⬆️ 上傳</button>
-        <button class="btn btn-g btn-sm" onclick="manualDownload()" id="fb-download" style="display:none">⬇️ 下載</button>
-        <span class="st" id="fb-st" style="margin:0"></span>
+    <div class="sec"><h3>☁️ 雲端同步</h3>
+      <div class="prow"><div><div class="prow-l">狀態</div><div class="prow-d" id="fb-info">連線中…</div></div><span class="st ok" id="fb-st"></span></div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-g btn-sm" onclick="syncFromCloud()">⬇️ 從雲端載入</button>
+        <button class="btn btn-p btn-sm" onclick="pushNow()">⬆️ 推送至雲端</button>
       </div>
-      <div class="st" id="fb-info" style="margin-top:6px;font-size:.75rem;color:var(--muted)"></div>
-    </div>
-    <div class="sec"><h3>🏷 自訂分類</h3>
-      <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px;line-height:1.6">新增自訂分類標籤，會同步到所有裝置。</p>
-      <div style="display:flex;gap:7px;margin-bottom:8px">
-        <input id="ncat-emoji" style="width:50px;background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:7px 8px;font-size:1rem;text-align:center;outline:none" placeholder="🏷" maxlength="4">
-        <input id="ncat-label" style="flex:1;background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:7px 10px;font-size:.85rem;outline:none" placeholder="分類名稱（例：學校行政）">
-        <button class="btn btn-p btn-sm" onclick="addUserCat()">新增</button>
-      </div>
-      <div id="ucat-list" style="display:flex;flex-direction:column;gap:4px"></div>
     </div>
     <div class="sec"><h3>資料</h3>
       <div class="prow"><div><div class="prow-l">🧹 移除重複 App</div><div class="prow-d">保留相同 URL 的第一筆</div></div><button class="btn btn-g btn-sm" onclick="dedup()">執行</button></div>
       <div class="st" id="stdd"></div>
+      <div class="prow" style="margin-top:6px"><div><div class="prow-l">🏷 重整所有標籤</div><div class="prow-d">依名稱/說明自動套用新分類</div></div><button class="btn btn-g btn-sm" onclick="retag()">執行</button></div>
+      <div class="st" id="stretag"></div>
     </div>
     <div class="mfoot"><button class="btn btn-g" onclick="closeSettings()">關閉</button></div>
   </div>
 </div>
 
 <script>
-const EMOJIS=[
-  '📊','💰','📈','🗂','🛠','🌐','📋','🎯','📦','🚀',
-  '🔍','💡','⚙️','🎨','📝','🔒','📱','🤖','✨','🦉',
-  '🎓','▶️','📚','🏫','🏃','🌱','🎭','🎮','🎵','🎬',
-  '🔬','🧪','🧠','💊','🏥','🗺','🌍','☁️','⚡','🔗',
-  '📸','🖥','💻','🖊','📌','🗒','🏆','🎪','🧩','👥',
-  '🌟','💎','🔔','📣','🎁','🧲','🔑','🛡','📡','🎯',
-  '🏛','👤','💬','📞','🌈','🦋','🐝','🌺','🍎','⭐',
-];
+const EMOJIS=['📊','💰','📈','🗂','🛠','🌐','📋','🎯','📦','🚀','🔍','💡','⚙️','🎨','📝','🔒','📱','🤖','✨','🦉','🎓','▶️','📚','🧠','💚','🌈','🎭','🫂','🤝','❤️','🏃','🌱','🚨','🛡️','🌊','🔥','🗺️','🎪','🏫','🧩','🎲','🃏','💪','🧘','🏋️','🥗','🍎','🏥','🩺','💊','🧬','🫀','🦷','👁️','🌿','🧴','🚴','⚽','🏊','🤸','🩹','😴'];
 const CATS=[
-  {l:'🌱 SEL',t:['SEL']},
-  {l:'📖 課程教學',t:['課程教學']},
-  {l:'🏫 行政管理',t:['行政管理']},
-  {l:'🏃 健康體育',t:['健康體育']},
-  {l:'🏛 經典',t:['經典']},
-  {l:'💰 財務管理',t:['財務管理']},
-  {l:'📦 其他',t:['其他']},
+  {l:'💚 SEL教育',t:['SEL教育','SEL','社會情緒學習']},
+  {l:'📝 國中小題庫',t:['國中小題庫','題庫','Quiz']},
+  {l:'🏫 學校行政',t:['學校行政','行政']},
+  {l:'💰 財務管理',t:['財務管理','財務','Finance']},
+  {l:'💪 健康體育',t:['健康體育']},
+  {l:'🗂 其他分類',t:['其他']},
 ];
 
+/* ── State ── */
 let cfg={}, role=null, activeTag='all', editId=null, selEmoji='🗂', tags=[];
 
-function getApps(){return JSON.parse(localStorage.getItem('yal_apps')||'[]')}
-function setApps(a){localStorage.setItem('yal_apps',JSON.stringify(a));pushToCloud(a);}
+/* ── Per-page storage namespace ── */
+const _NS=(function(){
+  const p=location.pathname.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'root';
+  const k='yal_apps_'+p;
+  if(!localStorage.getItem(k)&&localStorage.getItem('yal_apps'))
+    localStorage.setItem(k,localStorage.getItem('yal_apps'));
+  return k;
+})();
+const _FBDOC=_NS.replace('yal_apps_','');
+
+/* ── Storage ── */
+let _cache=null; // in-memory app cache — single source of truth during session
+
+function getApps(){
+  if(_cache===null) _cache=JSON.parse(localStorage.getItem(_NS)||'[]');
+  return _cache;
+}
+
+let _lastWrite=0;
+function setApps(a){
+  _lastWrite=Date.now();
+  _cache=a;
+  localStorage.setItem(_NS,JSON.stringify(a));
+  pushToCloud(a);
+}
+
 function loadCfg(){try{cfg=JSON.parse(localStorage.getItem('yal_cfg')||'{}')}catch{cfg={}}}
-function saveCfgFull(){localStorage.setItem('yal_cfg',JSON.stringify(cfg));pushCfgToCloud();}
-function getUserCats(){return cfg.userCats||[]}
-function getAllCats(){return[...CATS,...getUserCats()]}
+function saveCfgFull(){localStorage.setItem('yal_cfg',JSON.stringify(cfg))}
 function saveCfg(){cfg.guestPin=document.getElementById('sgp').checked;saveCfgFull();document.getElementById('gpinsec').style.display=cfg.guestPin?'':'none'}
 
-/* PIN */
+/* ── PIN ── */
 let pBuf='',pMode='unlock',pNew='',pRole=null;
-
 async function phash(p){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(p+'yal_v1'));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 
 function pdots(cls){
@@ -452,26 +481,30 @@ function pickRole(r){
   document.getElementById('pin-err').textContent='';
   document.getElementById('pin-forgot').style.display='none';
   document.getElementById('pin-skip').style.display='none';
-  // migrate old key
   const old=localStorage.getItem('applib_pin');
   if(old&&!cfg.hostPin){cfg.hostPin=old;saveCfgFull();}
   if(r==='host'){
     if(!cfg.hostPin){pMode='setup';document.getElementById('pin-title').textContent='設定 Host PIN';document.getElementById('pin-sub').textContent='請設定 4 位數字 PIN';}
     else{pMode='unlock';document.getElementById('pin-title').textContent='輸入 Host PIN';document.getElementById('pin-sub').textContent='';document.getElementById('pin-forgot').style.display='';}
   }else{
-    if(cfg.guestPin&&cfg.guestPinHash){pMode='unlock';document.getElementById('pin-title').textContent='輸入 Guest PIN';document.getElementById('pin-sub').textContent='';}
-    else{document.getElementById('pin-title').textContent='訪客登入';document.getElementById('pin-sub').textContent='無需 PIN';document.getElementById('pin-skip').style.display='';}
+    // Guest: skip PIN panel, enter directly
+    enter();
+    return;
   }
 }
 
 function backToRoles(){document.getElementById('role-picker').style.display='';document.getElementById('pin-panel').classList.remove('show');pBuf='';pRole=null;}
-
 function pk(d){if(pBuf.length>=4)return;pBuf+=d;document.getElementById('pin-err').textContent='';pdots();if(pBuf.length===4)setTimeout(psubmit,120);}
 function pb(){pBuf=pBuf.slice(0,-1);pdots();}
 
 async function psubmit(){
   const h=await phash(pBuf);
-  if(pMode==='setup'){cfg.hostPin=h;saveCfgFull();pBuf='';pdots('ok');document.getElementById('pin-title').textContent='✓ PIN 設定完成';setTimeout(enter,500);return;}
+  if(pMode==='setup'){pNew=h;pBuf='';pdots();document.getElementById('pin-title').textContent='確認 PIN 碼';document.getElementById('pin-sub').textContent='再輸入一次確認';pMode='setup2';return;}
+  if(pMode==='setup2'){
+    if(h===pNew){cfg.hostPin=h;saveCfgFull();pBuf='';pdots('ok');document.getElementById('pin-title').textContent='✓ PIN 設定完成';setTimeout(enter,500);}
+    else{pBuf='';pdots('err');document.getElementById('pin-err').textContent='兩次不一致，請重新設定';setTimeout(()=>{pdots();document.getElementById('pin-title').textContent='設定 Host PIN';pMode='setup';},900);}
+    return;
+  }
   if(pMode==='unlock'){
     const stored=pRole==='host'?cfg.hostPin:cfg.guestPinHash;
     if(h===stored){pBuf='';pdots('ok');setTimeout(enter,400);}
@@ -486,6 +519,15 @@ function enter(){
   activeTag='all';
   document.getElementById('lock').classList.add('off');
   applyRole();
+  // Guest: auto-load from Firebase if connected
+  if(role==='guest'&&fbDb&&fbReady){
+    fbDb.collection('yal').doc(_FBDOC).get().then(snap=>{
+      if(snap.exists){
+        const list=(snap.data()||{}).list||[];
+        if(list.length){setApps(list);render();}
+      }
+    }).catch(e=>console.warn('guest sync error:',e));
+  }
 }
 
 function logout(){role=null;localStorage.removeItem('yal_role');document.getElementById('lock').classList.remove('off');document.getElementById('role-picker').style.display='';document.getElementById('pin-panel').classList.remove('show');pBuf='';}
@@ -508,7 +550,7 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='Backspace')pb();
 });
 
-/* ROLE UI */
+/* ── Role UI ── */
 function applyRole(){
   const h=role==='host';
   document.querySelectorAll('.host-ui').forEach(el=>el.style.display=h?'':'none');
@@ -516,31 +558,47 @@ function applyRole(){
   render();
 }
 
-/* RENDER */
-function getVisible(){const a=getApps();return role==='host'?a:a.filter(x=>x.vis!==false);}
-function getFiltered(){
-  const q=document.getElementById('search').value.toLowerCase().trim();
+/* ── Render ── */
+function render(){
+  // Read apps ONCE — prevents sidebar/grid inconsistency
+  const apps=getApps();
+  const vis=role==='host'?apps:apps.filter(x=>x.vis!==false);
+
+  // Reset stale activeTag
+  if(activeTag!=='all'&&!vis.some(a=>(a.tags||[]).includes(activeTag)))activeTag='all';
+
+  // Sidebar
+  const counts={};vis.forEach(a=>(a.tags||[]).forEach(t=>counts[t]=(counts[t]||0)+1));
+  let th=`<div class="ti ${activeTag==='all'?'on':''}" onclick="setTag('all')"><span>🗂 全部</span><span class="tc">${vis.length}</span></div>`;
+  Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t,c])=>{
+    th+=`<div class="ti ${activeTag===t?'on':''}" onclick="setTag('${esc(t)}')"><span>${esc(t)}</span><span class="tc">${c}</span></div>`;
+  });
+  if(!counts['其他'])th+=`<div class="ti ${activeTag==='其他'?'on':''}"\ onclick="setTag('其他')"><span>🗂 其他</span><span class="tc">${counts['其他']||0}</span></div>`;
+  document.getElementById('tlist').innerHTML=th;
+
+  // Mobile tag bar
+  const _tb=document.getElementById('tagbar');
+  if(_tb){
+    let tb=`<button class="tbc ${activeTag==='all'?'on':''}" onclick="setTag('all')">🗂 全部 (${vis.length})</button>`;
+    Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t,c])=>{
+      tb+=`<button class="tbc ${activeTag===t?'on':''}" onclick="setTag('${esc(t)}')">${esc(t)} (${c})</button>`;
+    });
+    _tb.innerHTML=tb;
+  }
+
+  // Filter & sort from same vis array
+  const _sv=document.getElementById('search');if(_sv.value.startsWith('http')){_sv.value='';document.getElementById('sc').style.display='none';}
+  const q=_sv.value.toLowerCase().trim();
   const s=document.getElementById('sort').value;
-  let list=getVisible().filter(a=>{
+  let list=vis.filter(a=>{
     const okT=activeTag==='all'||(a.tags||[]).includes(activeTag);
-    const okQ=!q||a.name.toLowerCase().includes(q)||(a.desc||'').toLowerCase().includes(q)||(a.tags||[]).some(t=>t.toLowerCase().includes(q));
+    const okQ=!q||a.name.toLowerCase().includes(q)||(a.desc||'').toLowerCase().includes(q)||(a.url||'').toLowerCase().includes(q)||(a.tags||[]).some(t=>t.toLowerCase().includes(q));
     return okT&&okQ;
   });
   if(s==='az')list.sort((a,b)=>a.name.localeCompare(b.name));
   else list.sort((a,b)=>b.added-a.added);
-  return list;
-}
 
-function render(){
-  const vis=getVisible();
-  const counts={};vis.forEach(a=>(a.tags||[]).forEach(t=>counts[t]=(counts[t]||0)+1));
-  let th=`<div class="ti ${activeTag==='all'?'on':''}" onclick="setTag('all')"><span>🗂 全部</span><span class="tc">${vis.length}</span></div>`;
-  Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t,c])=>{
-    th+=`<div class="ti ${activeTag===t?'on':''}" onclick="setTag('${t}')"><span>${t}</span><span class="tc">${c}</span></div>`;
-  });
-  document.getElementById('tlist').innerHTML=th;
-
-  const list=getFiltered();const host=role==='host';
+  const host=role==='host';
   document.getElementById('count').textContent=`共 ${list.length} 個 App`;
   const grid=document.getElementById('grid'),empty=document.getElementById('empty');
   if(!list.length){
@@ -554,7 +612,7 @@ function render(){
     const dls=host?`<span class="badge ${a.dl?'b-dl':'b-ndl'}">${a.dl?'⬇️ 可下載':'🚫 不可下載'}</span>`:'';
     const dlbtn=a.dl&&(host||role==='guest')?`<button class="dlbtn" onclick="dlApp('${a.id}')" title="下載">⬇️</button>`:'';
     const ebtns=host?`<button class="ebtn" onclick="openModal('${a.id}')" title="編輯">✏️</button><button class="dbtn" onclick="delApp('${a.id}')" title="刪除">🗑</button>`:'';
-    const thtml=(a.tags||[]).length?`<div class="ctags">${a.tags.map(t=>`<button class="tchip" onclick="setTag('${t}')">${t}</button>`).join('')}</div>`:'';
+    const thtml=(a.tags||[]).length?`<div class="ctags">${a.tags.map(t=>`<button class="tchip" onclick="setTag('${esc(t)}')">${esc(t)}</button>`).join('')}</div>`:'';
     return `<div class="card${a.vis===false?' priv':''}">
       <div class="cstrip"></div>
       <div class="cbody">
@@ -571,18 +629,21 @@ function render(){
   }).join('');
 }
 
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function setTag(t){activeTag=t;render()}
 function onSearch(){document.getElementById('sc').style.display=document.getElementById('search').value?'':'none';render()}
 function clearSearch(){document.getElementById('search').value='';document.getElementById('sc').style.display='none';render()}
 
 function launch(id){
   const a=getApps().find(x=>x.id===id);if(!a)return;
-  const l=document.createElement('a');l.href=a.url;l.target='_blank';l.rel='noopener noreferrer';
-  document.body.appendChild(l);l.click();document.body.removeChild(l);
+  window.open(a.url,'_blank','noopener,noreferrer');
 }
 
-function delApp(id){setApps(getApps().filter(x=>x.id!==id));render();toast('App 已刪除');}
+function delApp(id){
+  setApps(getApps().filter(x=>x.id!==id));
+  render();
+  toast('App 已刪除');
+}
 
 async function dlApp(id){
   const a=getApps().find(x=>x.id===id);if(!a)return;
@@ -590,11 +651,12 @@ async function dlApp(id){
     const r=await fetch(a.url);if(!r.ok)throw 0;
     const blob=await r.blob();const url=URL.createObjectURL(blob);
     const l=document.createElement('a');l.href=url;l.download=a.url.split('/').pop()||a.name;
-    document.body.appendChild(l);l.click();document.body.removeChild(l);setTimeout(()=>URL.revokeObjectURL(url),3000);
+    document.body.appendChild(l);l.click();document.body.removeChild(l);
+    setTimeout(()=>URL.revokeObjectURL(url),3000);
   }catch{toast('下載失敗（可能因跨域限制）','err')}
 }
 
-/* MODAL */
+/* ── Modal ── */
 function openModal(id){
   editId=id||null;tags=[];selEmoji='🗂';
   ['furl','fname','fdesc','ftag'].forEach(i=>document.getElementById(i).value='');
@@ -617,19 +679,29 @@ function closeModal(){document.getElementById('mov').classList.remove('open')}
 function buildEmoji(){document.getElementById('egrid').innerHTML=EMOJIS.map(e=>`<div class="emo ${e===selEmoji?'sel':''}" onclick="pickEmoji('${e}')">${e}</div>`).join('')}
 function pickEmoji(e){selEmoji=e;document.querySelectorAll('.emo').forEach(el=>el.classList.toggle('sel',el.textContent===e))}
 
-function buildCats(){document.getElementById('cgrid').innerHTML=getAllCats().map(c=>`<button class="cat ${c.t.some(t=>tags.includes(t))?'sel':''}" data-tags='${JSON.stringify(c.t)}' onclick="toggleCat(this)">${c.l}</button>`).join('')}
+function buildCats(){document.getElementById('cgrid').innerHTML=CATS.map(c=>`<button class="cat ${c.t.some(t=>tags.includes(t))?'sel':''}" data-tags='${JSON.stringify(c.t)}' onclick="toggleCat(this)">${c.l}</button>`).join('')}
 function toggleCat(el){const ct=JSON.parse(el.dataset.tags);const all=ct.every(t=>tags.includes(t));if(all){ct.forEach(t=>tags=tags.filter(x=>x!==t));el.classList.remove('sel')}else{ct.forEach(t=>{if(!tags.includes(t))tags.push(t)});el.classList.add('sel')}renderChips()}
 
 function addTag(){const v=document.getElementById('ftag').value.trim();if(v&&!tags.includes(v)){tags.push(v);renderChips();buildCats();}document.getElementById('ftag').value=''}
 function removeTag(t){tags=tags.filter(x=>x!==t);renderChips();buildCats()}
-function renderChips(){document.getElementById('chips').innerHTML=tags.map(t=>`<div class="chip">${t}<button onclick="removeTag('${t}')">×</button></div>`).join('')}
+function renderChips(){document.getElementById('chips').innerHTML=tags.map(t=>`<div class="chip">${esc(t)}<button onclick="removeTag('${esc(t)}')">×</button></div>`).join('')}
 
 async function fetchTitle(){
   const url=document.getElementById('furl').value.trim();if(!url)return;
   const st=document.getElementById('fst');st.textContent='讀取中…';st.className='fst';
-  if(!url.startsWith('http')){const n=url.replace(/\\/g,'/').split('/').pop().replace(/\.[^.]+$/,'').replace(/[-_]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());document.getElementById('fname').value=n;st.textContent='✓ 已從路徑解析';st.className='fst ok';return;}
-  try{const r=await fetch(url,{mode:'cors'});const html=await r.text();const m=html.match(/<title[^>]*>([^<]+)<\/title>/i);if(m){document.getElementById('fname').value=m[1].trim();st.textContent='✓ 成功';st.className='fst ok';}else{st.textContent='找不到標題';st.className='fst err';}}
-  catch{try{const u=new URL(url);document.getElementById('fname').value=u.hostname;st.textContent='⚠ 已從網址解析';st.className='fst err';}catch{st.textContent='無法解析';st.className='fst err';}}
+  if(!url.startsWith('http')){
+    const n=url.replace(/\\/g,'/').split('/').pop().replace(/\.[^.]+$/,'').replace(/[-_]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+    document.getElementById('fname').value=n;st.textContent='✓ 已從路徑解析';st.className='fst ok';return;
+  }
+  try{
+    const r=await fetch(url,{mode:'cors'});const html=await r.text();
+    const m=html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    if(m){document.getElementById('fname').value=m[1].trim();st.textContent='✓ 成功';st.className='fst ok';}
+    else{st.textContent='找不到標題';st.className='fst err';}
+  }catch{
+    try{const u=new URL(url);document.getElementById('fname').value=u.hostname;st.textContent='⚠ 已從網址解析';st.className='fst err';}
+    catch{st.textContent='無法解析';st.className='fst err';}
+  }
 }
 
 function saveApp(){
@@ -644,16 +716,13 @@ function saveApp(){
   setApps(apps);closeModal();render();toast(editId?`「${name}」已更新`:`「${name}」已新增`);
 }
 
-/* AI */
+/* ── AI ── */
 const LR=[
-  {kw:['finance','財務','money','budget','expense','記帳'],t:['財務','Finance']},
-  {kw:['stock','invest','etf','股票','投資'],t:['投資','股票']},
-  {kw:['tool','utility','工具','計算'],t:['工具','Tool']},
-  {kw:['education','learn','課程','教育','學習'],t:['教育','Education']},
-  {kw:['chat','gpt','claude','llm','ai','對話'],t:['AI工具','AI對話']},
-  {kw:['design','figma','設計'],t:['設計','Design']},
-  {kw:['note','notion','task','生產力','筆記'],t:['生產力','Productivity']},
-  {kw:['video','youtube','影片','媒體'],t:['媒體','Media']},
+  {kw:['sel','社會情緒','emotion','情緒','emotional'],t:['SEL教育','SEL']},
+  {kw:['題庫','quiz','exam','考題','測驗','國中','國小'],t:['國中小題庫','題庫']},
+  {kw:['行政','公文','會議','排課','學校'],t:['學校行政','行政']},
+  {kw:['finance','財務','money','budget','記帳','會計','經費'],t:['財務管理','財務']},
+  {kw:['健康','體育','運動','health','fitness','sport','yoga','gym'],t:['健康體育']},
 ];
 function localCls(n,u,d){const txt=[n,u,d].join(' ').toLowerCase();const r=new Set();LR.forEach(x=>{if(x.kw.some(k=>txt.includes(k)))x.t.forEach(t=>r.add(t))});return[...r]}
 
@@ -679,21 +748,14 @@ async function claudeCls(n,u,d){
   const data=await r.json();return JSON.parse((data.content?.[0]?.text||'[]').match(/\[.*\]/s)?.[0]||'[]');
 }
 
-/* SETTINGS */
+/* ── Settings ── */
 function openSettings(){
   ['sh1','sh2','sg1','sg2'].forEach(i=>document.getElementById(i).value='');
   ['sth','stg'].forEach(i=>{document.getElementById(i).textContent='';document.getElementById(i).className='st';});
-  renderUserCats();
-  // Restore Firebase status display
-  const saved=localStorage.getItem('yal_fb');
-  if(saved&&fbReady){
-    document.getElementById('fb-cfg').value=saved;
-    try{const c=JSON.parse(saved.replace(/([{,]\s*)(\w+)\s*:/g,'$1"$2":'));document.getElementById('fb-info').textContent='專案：'+c.projectId;}catch{}
-    document.getElementById('fb-st').textContent='✅ 已連線';document.getElementById('fb-st').className='st ok';
-  }else if(saved){
-    document.getElementById('fb-cfg').value=saved;
-    document.getElementById('fb-st').textContent='未連線';document.getElementById('fb-st').className='st';
-  }
+  // Show shared Firebase status
+  document.getElementById('fb-st').textContent=fbReady?'✅ 已連線':'⏳ 連線中';
+  document.getElementById('fb-st').className=fbReady?'st ok':'st';
+  document.getElementById('fb-info').textContent=fbReady?'專案：young-app-library（共用）':'自動連線中…';
   document.getElementById('sgp').checked=!!cfg.guestPin;
   document.getElementById('gpinsec').style.display=cfg.guestPin?'':'none';
   document.getElementById('sai').checked=!!cfg.aiEnabled;
@@ -704,7 +766,7 @@ function openSettings(){
 }
 function closeSettings(){document.getElementById('sov').classList.remove('open')}
 function toggleAi(){cfg.aiEnabled=document.getElementById('sai').checked;saveCfgFull();document.getElementById('aiksec').style.display=cfg.aiEnabled?'':'none'}
-function saveKey(){const k=document.getElementById('skey').value.trim();if(!k){document.getElementById('stkey').textContent='請輸入 Key';document.getElementById('stkey').className='st err';return;}localStorage.setItem('yal_key',k);document.getElementById('stkey').textContent='✓ 已儲存';document.getElementById('stkey').className='st ok';document.getElementById('skey').value='';}
+function saveKey(){const k=document.getElementById('skey').value.trim();if(!k){document.getElementById('stkey').textContent='請輸入 Key';document.getElementById('stkey').className='st err';return;}localStorage.setItem('yal_key',k);if(fbDb&&fbReady){fbDb.collection('yal').doc(_FBDOC).set({aiKey:k},{merge:true}).catch(e=>console.warn('key sync:',e));}document.getElementById('stkey').textContent='✓ 已儲存（已同步至雲端）';document.getElementById('stkey').className='st ok';document.getElementById('skey').value='';}
 
 async function changePIN(r){
   const p1=document.getElementById(r==='host'?'sh1':'sg1').value,p2=document.getElementById(r==='host'?'sh2':'sg2').value,st=document.getElementById(r==='host'?'sth':'stg');
@@ -723,51 +785,41 @@ function dedup(){
   document.getElementById('stdd').textContent=n>0?`✓ 已移除 ${n} 個重複`:'✓ 無重複';document.getElementById('stdd').className='st ok';
 }
 
-/* TOAST */
+function retag(){
+  const MAP=[
+    {kw:['sel','社會情緒','emotion','情緒','emotional','color game','colour','emotion palette'],cat:'SEL教育'},
+    {kw:['題庫','quiz','exam','考題','測驗','國中','國小','練習','基礎英文'],cat:'國中小題庫'},
+    {kw:['行政','公文','會議','排課','學校','school'],cat:'學校行政'},
+    {kw:['finance','財務','money','budget','記帳','會計','經費','mint'],cat:'財務管理'},
+    {kw:['健康','體育','運動','health','fitness','sport','yoga'],cat:'健康體育'},
+  ];
+  const apps=getApps().map(a=>{
+    const txt=[a.name,a.desc,a.url,...(a.tags||[])].join(' ').toLowerCase();
+    const matched=MAP.filter(m=>m.kw.some(k=>txt.includes(k))).map(m=>m.cat);
+    return {...a,tags:matched.length?matched:['其他']};
+  });
+  setApps(apps);render();
+  document.getElementById('stretag').textContent='✓ 已重整 '+apps.length+' 個 App 的標籤';
+  document.getElementById('stretag').className='st ok';
+}
+
+/* ── Toast ── */
 let toastT;
 function toast(msg,type='ok'){
   const t=document.getElementById('toast');t.textContent=(type==='ok'?'✅ ':'❌ ')+msg;t.className='show '+type;
   clearTimeout(toastT);toastT=setTimeout(()=>t.className='',2800);
 }
 
-/* CUSTOM CATEGORIES */
-function addUserCat(){
-  const emoji=document.getElementById('ncat-emoji').value.trim()||'🏷';
-  const label=document.getElementById('ncat-label').value.trim();
-  if(!label){toast('請輸入分類名稱','err');return;}
-  if(!cfg.userCats)cfg.userCats=[];
-  const tag=label.replace(/\s+/g,'');
-  cfg.userCats.push({l:emoji+' '+label,t:[tag]});
-  saveCfgFull();
-  document.getElementById('ncat-emoji').value='';
-  document.getElementById('ncat-label').value='';
-  renderUserCats();
-  toast('分類已新增');
-}
-function removeUserCat(i){
-  if(!cfg.userCats)return;
-  cfg.userCats.splice(i,1);
-  saveCfgFull();renderUserCats();toast('分類已刪除');
-}
-function renderUserCats(){
-  const list=getUserCats();
-  const el=document.getElementById('ucat-list');if(!el)return;
-  if(!list.length){el.innerHTML='<div style="font-size:.78rem;color:var(--muted)">尚無自訂分類</div>';return;}
-  el.innerHTML=list.map((c,i)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--s2);border-radius:9px;border:1px solid var(--border)"><span style="font-size:.85rem">${esc(c.l)}</span><button onclick="removeUserCat(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem" title="刪除">🗑</button></div>`).join('');
-}
-
-/* FIREBASE SYNC */
-let fbApp=null, fbDb=null, fbUnsub=null, fbCfgUnsub=null, fbReady=false;
+/* ── Firebase ── */
+let fbApp=null,fbDb=null,fbUnsub=null,fbReady=false;
 
 function connectFirebase(){
   const raw=document.getElementById('fb-cfg').value.trim();
-  const st=document.getElementById('fb-st'), info=document.getElementById('fb-info');
+  const st=document.getElementById('fb-st'),info=document.getElementById('fb-info');
   if(!raw){st.textContent='請貼上 Firebase Config';st.className='st err';return;}
   let fbCfg;
-  try{
-    // Accept both JS object literal and JSON
-    fbCfg=JSON.parse(raw.replace(/([{,]\s*)(\w+)\s*:/g,'$1"$2":'));
-  }catch{st.textContent='Config 格式錯誤，請貼完整 JSON';st.className='st err';return;}
+  try{fbCfg=JSON.parse(raw.replace(/([{,]\s*)(\w+)\s*:/g,'$1"$2":'));}
+  catch{st.textContent='Config 格式錯誤';st.className='st err';return;}
   try{
     if(fbApp){try{fbApp.delete();}catch(e){}}
     fbApp=firebase.initializeApp(fbCfg,'yal-'+Date.now());
@@ -776,8 +828,6 @@ function connectFirebase(){
     fbReady=true;
     st.textContent='✅ 已連線';st.className='st ok';
     info.textContent='專案：'+fbCfg.projectId;
-    document.getElementById('fb-upload').style.display='';
-    document.getElementById('fb-download').style.display='';
     startSync();
     toast('Firebase 雲端同步已啟動 ☁️');
   }catch(e){st.textContent='連線失敗：'+e.message;st.className='st err';}
@@ -785,12 +835,9 @@ function connectFirebase(){
 
 function disconnectFirebase(){
   if(fbUnsub){fbUnsub();fbUnsub=null;}
-  if(fbCfgUnsub){fbCfgUnsub();fbCfgUnsub=null;}
   if(fbApp){try{fbApp.delete();}catch(e){}}
   fbApp=null;fbDb=null;fbReady=false;
   localStorage.removeItem('yal_fb');
-  document.getElementById('fb-upload').style.display='none';
-  document.getElementById('fb-download').style.display='none';
   document.getElementById('fb-st').textContent='已斷線';document.getElementById('fb-st').className='st';
   document.getElementById('fb-info').textContent='';
   toast('雲端同步已關閉');
@@ -798,80 +845,103 @@ function disconnectFirebase(){
 
 function startSync(){
   if(!fbDb)return;
-  if(fbUnsub){fbUnsub();}
-  if(fbCfgUnsub){fbCfgUnsub();}
-  fbUnsub=fbDb.collection('yal').doc('apps').onSnapshot(snap=>{
-    if(!snap.exists)return;
-    const cloudApps=snap.data().list||[];
-    localStorage.setItem('yal_apps',JSON.stringify(cloudApps));
-    if(role)render();
-  },err=>console.warn('Firestore apps listen error:',err));
-  fbCfgUnsub=fbDb.collection('yal').doc('cats').onSnapshot(snap=>{
-    if(!snap.exists)return;
-    const cloudCats=snap.data().list||[];
-    cfg.userCats=cloudCats;
-    localStorage.setItem('yal_cfg',JSON.stringify(cfg));
-    renderUserCats();
-  },err=>console.warn('Firestore cats listen error:',err));
+  if(fbUnsub)fbUnsub();
+  fbUnsub=fbDb.collection('yal').doc(_FBDOC).onSnapshot(snap=>{
+    try{
+      if(!snap.exists)return;
+      const _d=snap.data()||{};if(_d.aiKey&&!localStorage.getItem('yal_key'))localStorage.setItem('yal_key',_d.aiKey);
+      const cloudApps=_d.list||[];
+      if(!cloudApps.length)return;
+      // Skip if we just wrote locally (prevents overwriting own changes)
+      if(Date.now()-_lastWrite<5000)return;
+      const localJson=localStorage.getItem(_NS)||'[]';
+      if(JSON.stringify(cloudApps)===localJson)return;
+      _cache=cloudApps;
+      localStorage.setItem(_NS,JSON.stringify(cloudApps));
+      if(role)render();
+    }catch(e){console.warn('onSnapshot:',e);}
+  },err=>console.warn('Firestore:',err));
+}
+
+async function pushNow(){
+  if(!fbDb||!fbReady){toast('Firebase 未連線','err');return;}
+  try{
+    await pushToCloud(getApps());
+    toast('已推送 '+getApps().length+' 個 App 至雲端');
+  }catch(e){toast('推送失敗','err');}
+}
+
+async function syncFromCloud(){
+  if(!fbDb||!fbReady){toast('Firebase 未連線','err');return;}
+  try{
+    const snap=await fbDb.collection('yal').doc(_FBDOC).get();
+    if(!snap.exists||!((snap.data()||{}).list||[]).length){toast('雲端尚無資料','err');return;}
+    const cloudApps=snap.data().list;
+    setApps(cloudApps);render();toast('已從雲端載入 '+cloudApps.length+' 個 App');
+  }catch(e){console.warn(e);toast('同步失敗','err');}
 }
 
 async function pushToCloud(apps){
   if(!fbDb||!fbReady)return;
-  try{await fbDb.collection('yal').doc('apps').set({list:apps,updated:Date.now()});}
+  const _k=localStorage.getItem('yal_key')||'';try{await fbDb.collection('yal').doc(_FBDOC).set({list:apps,updated:Date.now(),...(_k?{aiKey:_k}:{})});}
   catch(e){console.warn('Firestore write error:',e);}
 }
 
-async function pushCfgToCloud(){
-  if(!fbDb||!fbReady)return;
-  try{await fbDb.collection('yal').doc('cats').set({list:cfg.userCats||[],updated:Date.now()});}
-  catch(e){console.warn('Firestore cfg write error:',e);}
-}
-
-async function manualUpload(){
-  if(!fbDb||!fbReady){toast('請先連線 Firebase','err');return;}
-  try{
-    await pushToCloud(getApps());
-    toast('⬆️ 已上傳到雲端 ✅');
-  }catch(e){toast('上傳失敗：'+e.message,'err');}
-}
-
-async function manualDownload(){
-  if(!fbDb||!fbReady){toast('請先連線 Firebase','err');return;}
-  try{
-    const snap=await fbDb.collection('yal').doc('apps').get();
-    if(!snap.exists){toast('雲端沒有資料','err');return;}
-    const cloudApps=snap.data().list||[];
-    localStorage.setItem('yal_apps',JSON.stringify(cloudApps));
-    if(role)render();
-    toast('⬇️ 已從雲端下載 '+cloudApps.length+' 個 App ✅');
-  }catch(e){toast('下載失敗：'+e.message,'err');}
-}
-
-const DEFAULT_FB_CFG='{"apiKey":"AIzaSyCIy0n9kPZPtbRJiX_r1qTp8Faw3fNS2DE","authDomain":"young-app-library.firebaseapp.com","projectId":"young-app-library","storageBucket":"young-app-library.firebasestorage.app","messagingSenderId":"538293441872","appId":"1:538293441872:web:40c9b801e43015d01ac855"}';
+// Hardcoded shared Firebase config — all users auto-connect
+const _SHARED_FB={
+  apiKey:"AIzaSyCIy0n9kPZPtbRJiX_r1qTp8Faw3fNS2DE",
+  authDomain:"young-app-library.firebaseapp.com",
+  projectId:"young-app-library",
+  storageBucket:"young-app-library.firebasestorage.app",
+  messagingSenderId:"538293441872",
+  appId:"1:538293441872:web:40c9b801e43015d01ac855"
+};
 
 function initFirebase(){
-  const saved=localStorage.getItem('yal_fb')||DEFAULT_FB_CFG;
-  document.getElementById('fb-cfg').value=saved;
-  localStorage.setItem('yal_fb',saved);
-  connectFirebase();
+  try{
+    if(fbApp){try{fbApp.delete();}catch(e){}}
+    fbApp=firebase.initializeApp(_SHARED_FB,'yal-shared');
+    fbDb=firebase.firestore(fbApp);
+    fbReady=true;
+    startSync(); // real-time listener for cross-device sync
+    const st=document.getElementById('fb-st');
+    if(st){st.textContent='✅ 已連線（共用）';st.className='st ok';}
+    const info=document.getElementById('fb-info');
+    if(info){info.textContent='專案：young-app-library';}
+    // Auto-pull: update if Firebase data differs from local
+    fbDb.collection('yal').doc(_FBDOC).get().then(snap=>{
+      if(!snap.exists)return;
+      const list=(snap.data()||{}).list||[];
+      if(!list.length)return;
+      const localJson=localStorage.getItem(_NS)||'[]';
+      if(JSON.stringify(list)!==localJson){
+        _cache=list;
+        localStorage.setItem(_NS,JSON.stringify(list));
+        if(role)render();
+      }
+    }).catch(e=>console.warn('auto-pull error:',e));
+  }catch(e){console.warn('Firebase init error:',e);}
 }
 
-/* SEED */
+/* ── Seed ── */
 function seed(){
   if(getApps().length)return;
+  const now=Date.now();
   setApps([
-    {id:'s1',url:'https://www.khanacademy.org',name:'Khan Academy',emoji:'📚',desc:'免費線上課程，數學、科學、程式',tags:['教育'],vis:true,dl:false,added:Date.now()-100},
-    {id:'s2',url:'https://www.duolingo.com',name:'Duolingo',emoji:'🦉',desc:'語言學習 App，每日練習',tags:['教育','語言'],vis:true,dl:false,added:Date.now()-200},
-    {id:'s3',url:'https://chat.openai.com',name:'ChatGPT',emoji:'🤖',desc:'OpenAI AI 對話助理',tags:['AI工具'],vis:true,dl:false,added:Date.now()-300},
-    {id:'s4',url:'https://claude.ai',name:'Claude',emoji:'✨',desc:'Anthropic AI，擅長分析與寫作',tags:['AI工具'],vis:true,dl:false,added:Date.now()-400},
-    {id:'s5',url:'https://www.figma.com',name:'Figma',emoji:'🎨',desc:'協作設計工具',tags:['設計','工具'],vis:true,dl:false,added:Date.now()-500},
-    {id:'s6',url:'https://notion.so',name:'Notion',emoji:'📝',desc:'筆記、資料庫、專案管理',tags:['生產力','工具'],vis:true,dl:false,added:Date.now()-600},
-    {id:'s7',url:'https://www.youtube.com',name:'YouTube',emoji:'▶️',desc:'影片平台',tags:['媒體','教育'],vis:true,dl:false,added:Date.now()-700},
-    {id:'s8',url:'https://www.mint.com',name:'Mint',emoji:'💰',desc:'個人財務管理',tags:['財務'],vis:true,dl:false,added:Date.now()-800},
+    {id:'s1',url:'https://www.khanacademy.org',name:'Khan Academy',emoji:'📚',desc:'免費線上課程，數學、科學、程式',tags:['教育'],vis:true,dl:false,added:now-100},
+    {id:'s2',url:'https://www.duolingo.com',name:'Duolingo',emoji:'🦉',desc:'語言學習 App，每日練習',tags:['教育','語言'],vis:true,dl:false,added:now-200},
+    {id:'s3',url:'https://chat.openai.com',name:'ChatGPT',emoji:'🤖',desc:'OpenAI AI 對話助理',tags:['AI工具'],vis:true,dl:false,added:now-300},
+    {id:'s4',url:'https://claude.ai',name:'Claude',emoji:'✨',desc:'Anthropic AI，擅長分析與寫作',tags:['AI工具'],vis:true,dl:false,added:now-400},
+    {id:'s5',url:'https://www.figma.com',name:'Figma',emoji:'🎨',desc:'協作設計工具',tags:['設計','工具'],vis:true,dl:false,added:now-500},
+    {id:'s6',url:'https://notion.so',name:'Notion',emoji:'📝',desc:'筆記、資料庫、專案管理',tags:['生產力','工具'],vis:true,dl:false,added:now-600},
+    {id:'s7',url:'https://www.youtube.com',name:'YouTube',emoji:'▶️',desc:'影片平台',tags:['媒體','教育'],vis:true,dl:false,added:now-700},
+    {id:'s8',url:'https://www.mint.com',name:'Mint',emoji:'💰',desc:'個人財務管理',tags:['財務'],vis:true,dl:false,added:now-800},
   ]);
 }
 
-/* INIT */
+/* ── Init ── */
+window.addEventListener('pageshow',e=>{if(e.persisted&&role)render();});
+document.getElementById('search').value=''; // force clear on every load
 loadCfg();seed();initFirebase();
 (function init(){
   const saved=localStorage.getItem('yal_role');
