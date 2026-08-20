@@ -439,7 +439,10 @@ const _NS=(function(){
     localStorage.setItem(k,localStorage.getItem('yal_apps'));
   return k;
 })();
-const _FBDOC=_NS.replace('yal_apps_','');
+// Fixed cloud document id — must NOT depend on location.pathname, or the same
+// library loaded via a different URL variant (e.g. "/" vs "/index.html") would
+// read/write a different Firestore doc and appear "not synced" across devices.
+const _FBDOC='main';
 
 /* ── Storage ── */
 let _cache=null; // in-memory app cache — single source of truth during session
