@@ -983,6 +983,22 @@ async function pushToCloud(apps,ts,opts){
   // erasing a category someone else just added. This is exactly why a newly
   // added tag wasn't showing up on other devices.
   if(prevData&&Array.isArray(prevData.cats)&&prevData.cats.length)_mergeCats(prevData.cats);
+  // Union each App's tags with whatever the cloud already has for that same
+  // id. A single-app edit still pushes the whole 38-item array — if this
+  // device's local copy is stale (hasn't pulled a tag another device just
+  // added to some OTHER app), that push would otherwise silently revert
+  // that tag the moment it saves anything unrelated. This only ever adds
+  // tags back in, never removes one the user just deleted here.
+  if(prevList){
+    const prevById={};
+    prevList.forEach(a=>{if(a&&a.id)prevById[a.id]=a;});
+    apps=apps.map(a=>{
+      const prev=a&&a.id?prevById[a.id]:null;
+      if(!prev||!Array.isArray(prev.tags)||!prev.tags.length)return a;
+      const merged=new Set([...(a.tags||[]),...prev.tags]);
+      return merged.size===(a.tags||[]).length?a:{...a,tags:[...merged]};
+    });
+  }
   if(prevList&&!opts.force){
     const cloudCount=prevList.length;
     const bigShrink=apps.length<cloudCount-SHRINK_GUARD_MIN_DROP&&apps.length<cloudCount*SHRINK_GUARD_RATIO;
