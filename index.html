@@ -1056,21 +1056,74 @@ function seed(){
   localStorage.setItem(_UPD,'1');
 }
 
+/* ── Recovery tool (?recover) ──
+   The app has never deleted old localStorage keys (only ever read from
+   them), so if seed placeholder data got saved/pushed over real data, the
+   real data is very likely still sitting untouched under an old key. This
+   scans every key that looks like App data, shows a preview, and lets the
+   user manually pick which one to restore — nothing is touched
+   automatically. */
+function showRecoveryUI(){
+  const found=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(!/^yal_apps/.test(k))continue;
+    let apps=null;
+    try{apps=JSON.parse(localStorage.getItem(k)||'[]');}catch{}
+    if(!Array.isArray(apps))continue;
+    found.push({k,apps});
+  }
+  found.sort((a,b)=>b.apps.length-a.apps.length);
+  const esc2=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const rows=found.map(({k,apps})=>{
+    const tagSet=new Set();apps.forEach(a=>(a.tags||[]).forEach(t=>tagSet.add(t)));
+    const names=apps.slice(0,8).map(a=>esc2(a.name||a.id||'?')).join('、');
+    return `<div style="border:1px solid #3a3a4a;border-radius:10px;padding:14px;margin:12px 0;background:#15151f">
+      <div style="font-weight:700;font-size:15px">${esc2(k)} — ${apps.length} 個 App，${tagSet.size} 個分類</div>
+      <div style="color:#9a9ab0;font-size:13px;margin:6px 0">${names}${apps.length>8?'…':''}</div>
+      <div style="color:#9a9ab0;font-size:13px">分類：${esc2([...tagSet].join('、')||'（無）')}</div>
+      <button onclick="restoreFromKey('${k.replace(/'/g,"\\'")}')" style="margin-top:10px;padding:10px 18px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:14px">還原這份到雲端</button>
+    </div>`;
+  }).join('')||'<p>沒有找到任何本機 App 資料。</p>';
+  document.body.insertAdjacentHTML('beforeend',`
+    <div id="recoveryOverlay" style="position:fixed;inset:0;background:#0a0a10;color:#fff;z-index:99999;overflow:auto;padding:24px;font-family:-apple-system,sans-serif">
+      <h2 style="margin:0 0 8px">🔧 本機資料還原工具</h2>
+      <p style="color:#9a9ab0">以下是這支裝置瀏覽器裡目前留存的每一份 App 清單快照（依數量由多到少排序）。確認哪一份是你要的完整資料後，按下方按鈕即可還原並推送到雲端；按下前不會做任何改動。</p>
+      ${rows}
+    </div>`);
+}
+async function restoreFromKey(k){
+  let apps;
+  try{apps=JSON.parse(localStorage.getItem(k)||'[]');}catch{alert('資料格式錯誤，無法還原');return;}
+  if(!Array.isArray(apps)||!apps.length){alert('這份資料是空的');return;}
+  if(!confirm('確定要用「'+k+'」這 '+apps.length+' 個 App 覆蓋目前雲端與本機的清單嗎？此動作會覆蓋雲端現有資料。'))return;
+  setApps(apps);
+  await pushToCloud(apps,Date.now());
+  alert('已還原 '+apps.length+' 個 App 並推送到雲端。請移除網址列的 ?recover 後重新整理確認。');
+}
+
 /* ── Init ── */
 window.addEventListener('pageshow',e=>{if(e.persisted&&role)render();});
 document.getElementById('search').value=''; // force clear on every load
-loadCfg();seed();initFirebase();
-(function init(){
-  const saved=localStorage.getItem('yal_role');
-  if(saved==='host'||saved==='guest'){
-    role=saved;
-    document.getElementById('search').value='';
-    document.getElementById('sc').style.display='none';
-    activeTag='all';
-    document.getElementById('lock').classList.add('off');
-    applyRole();
-  }
-})();
+const _recoverMode=new URLSearchParams(location.search).has('recover');
+loadCfg();
+initFirebase();
+if(_recoverMode){
+  showRecoveryUI();
+}else{
+  seed();
+  (function init(){
+    const saved=localStorage.getItem('yal_role');
+    if(saved==='host'||saved==='guest'){
+      role=saved;
+      document.getElementById('search').value='';
+      document.getElementById('sc').style.display='none';
+      activeTag='all';
+      document.getElementById('lock').classList.add('off');
+      applyRole();
+    }
+  })();
+}
 </script>
 </body>
 </html>
