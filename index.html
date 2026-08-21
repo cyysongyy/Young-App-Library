@@ -419,7 +419,7 @@ main{flex:1;padding:22px}
 
 <script>
 const EMOJIS=['📊','💰','📈','🗂','🛠','🌐','📋','🎯','📦','🚀','🔍','💡','⚙️','🎨','📝','🔒','📱','🤖','✨','🦉','🎓','▶️','📚','🧠','💚','🌈','🎭','🫂','🤝','❤️','🏃','🌱','🚨','🛡️','🌊','🔥','🗺️','🎪','🏫','🧩','🎲','🃏','💪','🧘','🏋️','🥗','🍎','🏥','🩺','💊','🧬','🫀','🦷','👁️','🌿','🧴','🚴','⚽','🏊','🤸','🩹','😴'];
-const CATS=[
+const DEFAULT_CATS=[
   {l:'💚 SEL教育',t:['SEL教育','SEL','社會情緒學習']},
   {l:'📝 國中小題庫',t:['國中小題庫','題庫','Quiz']},
   {l:'🏫 學校行政',t:['學校行政','行政']},
@@ -427,6 +427,37 @@ const CATS=[
   {l:'💪 健康體育',t:['健康體育']},
   {l:'🗂 其他分類',t:['其他']},
 ];
+// User-created tags become permanent quick-select buttons too (not just a
+// one-off label on a single App) — stored separately from DEFAULT_CATS so we
+// can merge them across devices without touching the built-in presets.
+function _loadCustomCats(){try{const v=JSON.parse(localStorage.getItem('yal_cats')||'[]');return Array.isArray(v)?v:[]}catch{return[]}}
+function _saveCustomCats(){localStorage.setItem('yal_cats',JSON.stringify(customCats))}
+let customCats=_loadCustomCats();
+let CATS=[...DEFAULT_CATS,...customCats];
+function addCustomCat(tag){
+  if(CATS.some(c=>c.t.includes(tag)))return; // already has a preset button covering this tag
+  customCats.push({l:'🗂 '+tag,t:[tag]});
+  CATS=[...DEFAULT_CATS,...customCats];
+  _saveCustomCats();
+  pushCatsToCloud();
+}
+// Cloud copy is only ever unioned in, never used to replace the local list —
+// a custom category button disappearing on sync was the exact bug we just
+// fixed for Apps, so categories here only ever grow, never get overwritten.
+function _mergeCats(cloudCats){
+  if(!Array.isArray(cloudCats)||!cloudCats.length)return;
+  let changed=false;
+  cloudCats.forEach(c=>{
+    if(!c||!Array.isArray(c.t)||!c.t.length)return;
+    if(!CATS.some(x=>x.t.includes(c.t[0]))){customCats.push(c);changed=true;}
+  });
+  if(changed){CATS=[...DEFAULT_CATS,...customCats];_saveCustomCats();if(document.getElementById('cgrid'))buildCats();}
+}
+async function pushCatsToCloud(){
+  if(!fbDb||!fbReady)return;
+  try{await fbDb.collection('yal').doc(_FBDOC).set({cats:customCats},{merge:true});}
+  catch(e){console.warn('cats push error:',e);}
+}
 
 /* ── State ── */
 let cfg={}, role=null, activeTag='all', editId=null, selEmoji='🗂', tags=[];
@@ -693,7 +724,7 @@ function pickEmoji(e){selEmoji=e;document.querySelectorAll('.emo').forEach(el=>e
 function buildCats(){document.getElementById('cgrid').innerHTML=CATS.map(c=>`<button class="cat ${c.t.some(t=>tags.includes(t))?'sel':''}" data-tags='${JSON.stringify(c.t)}' onclick="toggleCat(this)">${c.l}</button>`).join('')}
 function toggleCat(el){const ct=JSON.parse(el.dataset.tags);const all=ct.every(t=>tags.includes(t));if(all){ct.forEach(t=>tags=tags.filter(x=>x!==t));el.classList.remove('sel')}else{ct.forEach(t=>{if(!tags.includes(t))tags.push(t)});el.classList.add('sel')}renderChips()}
 
-function addTag(){const v=document.getElementById('ftag').value.trim();if(v&&!tags.includes(v)){tags.push(v);renderChips();buildCats();}document.getElementById('ftag').value=''}
+function addTag(){const v=document.getElementById('ftag').value.trim();if(v&&!tags.includes(v)){tags.push(v);addCustomCat(v);renderChips();buildCats();}document.getElementById('ftag').value=''}
 function removeTag(t){tags=tags.filter(x=>x!==t);renderChips();buildCats()}
 function renderChips(){document.getElementById('chips').innerHTML=tags.map(t=>`<div class="chip">${esc(t)}<button onclick="removeTag('${esc(t)}')">×</button></div>`).join('')}
 
@@ -872,6 +903,7 @@ function startSync(){
     try{
       if(!snap.exists)return;
       const _d=snap.data()||{};if(_d.aiKey&&!localStorage.getItem('yal_key'))localStorage.setItem('yal_key',_d.aiKey);
+      _mergeCats(_d.cats);
       const cloudApps=_d.list||[];
       if(!cloudApps.length)return;
       // Only accept an incoming snapshot if it's actually newer than what we
@@ -898,6 +930,7 @@ async function syncFromCloud(){
     const snap=await fbDb.collection('yal').doc(_FBDOC).get();
     if(!snap.exists||!((snap.data()||{}).list||[]).length){toast('雲端尚無資料','err');return;}
     const _d=snap.data();
+    _mergeCats(_d.cats);
     _adoptCloud(_d.list,_d.updated);
     render();toast('已從雲端載入 '+_d.list.length+' 個 App');
   }catch(e){console.warn(e);toast('同步失敗','err');}
@@ -910,7 +943,7 @@ async function pushToCloud(apps,ts){
     // merge:true — a plain .set() replaces the whole doc, which had been
     // silently wiping fields not included in this write (e.g. aiKey) any
     // time a device pushed without one set locally.
-    await fbDb.collection('yal').doc(_FBDOC).set({list:apps,updated:ts||Date.now(),...(_k?{aiKey:_k}:{})},{merge:true});
+    await fbDb.collection('yal').doc(_FBDOC).set({list:apps,updated:ts||Date.now(),cats:customCats,...(_k?{aiKey:_k}:{})},{merge:true});
     return true;
   }catch(e){
     console.warn('Firestore write error:',e);
@@ -940,6 +973,7 @@ function initFirebase(){
     fbApp.auth().signInAnonymously().then(()=>{
       fbReady=true;
       startSync(); // real-time listener for cross-device sync
+      pushCatsToCloud(); // flush any custom category added while offline/pre-connect
       if(st){st.textContent='✅ 已連線（共用）';st.className='st ok';}
       const info=document.getElementById('fb-info');
       if(info){info.textContent='專案：young-app-library';}
@@ -956,6 +990,7 @@ function initFirebase(){
           return;
         }
         const _d=snap.data()||{};
+        _mergeCats(_d.cats);
         const list=_d.list||[];
         const cloudTs=_d.updated||0;
         if(!list.length){
