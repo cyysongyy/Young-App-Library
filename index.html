@@ -977,6 +977,12 @@ async function pushToCloud(apps,ts,opts){
     if(snap.exists)prevData=snap.data()||{};
   }catch(e){console.warn('pre-push read failed:',e);}
   const prevList=prevData&&Array.isArray(prevData.list)?prevData.list:null;
+  // Union in any custom category another device added since we last synced
+  // — otherwise this write's own "cats:customCats" below would silently
+  // overwrite the cloud's cats field with our (possibly stale) local list,
+  // erasing a category someone else just added. This is exactly why a newly
+  // added tag wasn't showing up on other devices.
+  if(prevData&&Array.isArray(prevData.cats)&&prevData.cats.length)_mergeCats(prevData.cats);
   if(prevList&&!opts.force){
     const cloudCount=prevList.length;
     const bigShrink=apps.length<cloudCount-SHRINK_GUARD_MIN_DROP&&apps.length<cloudCount*SHRINK_GUARD_RATIO;
