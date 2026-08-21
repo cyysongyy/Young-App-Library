@@ -645,7 +645,13 @@ function render(){
   const grid=document.getElementById('grid'),empty=document.getElementById('empty');
   if(!list.length){
     grid.innerHTML='';empty.style.display='';
-    document.getElementById('emsg').innerHTML=host?'還沒有任何 App<br>點右上角「+ 新增 App」開始吧':'目前沒有公開的 App';
+    // "還沒有任何 App" implies the whole library is empty — wrong and alarming
+    // when it's really just the active category + search combo matching
+    // nothing. Distinguish a real empty library from an empty filter result.
+    const filtered=activeTag!=='all'||!!q;
+    document.getElementById('emsg').innerHTML=filtered
+      ?'沒有符合條件的 App<br>試試清除搜尋文字或選擇「🗂 全部」'
+      :(host?'還沒有任何 App<br>點右上角「+ 新增 App」開始吧':'目前沒有公開的 App');
     return;
   }
   empty.style.display='none';
