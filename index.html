@@ -471,10 +471,27 @@ let cfg={}, role=null, activeTag='all', editId=null, selEmoji='🗂', tags=[];
 const _NS='yal_apps';
 const _UPD='yal_updated';
 (function(){
-  if(localStorage.getItem(_NS))return;
-  const p=location.pathname.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'root';
-  const old=localStorage.getItem('yal_apps_'+p)||localStorage.getItem('yal_apps_root');
-  if(old)localStorage.setItem(_NS,old);
+  // Don't just check "does the new key exist" — a leftover value from years
+  // of prior versions (even a stale "[]") would satisfy that and skip
+  // migration entirely, leaving real data stranded under an old per-path key
+  // and making the App list look reset to nothing/seed on every load.
+  try{
+    const cur=JSON.parse(localStorage.getItem(_NS)||'[]');
+    if(Array.isArray(cur)&&cur.length)return;
+  }catch{}
+  // Scan every legacy "yal_apps..." key this app has ever used (per-path
+  // variants from before the key was fixed, plus the original un-namespaced
+  // key) and adopt whichever one actually holds the most Apps.
+  let best=null,bestLen=0;
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k===_NS||!/^yal_apps(_|$)/.test(k))continue;
+    try{
+      const v=JSON.parse(localStorage.getItem(k)||'[]');
+      if(Array.isArray(v)&&v.length>bestLen){best=v;bestLen=v.length;}
+    }catch{}
+  }
+  if(best)localStorage.setItem(_NS,JSON.stringify(best));
 })();
 // Fixed cloud document id — must NOT depend on location.pathname, or the same
 // library loaded via a different URL variant (e.g. "/" vs "/index.html") would
