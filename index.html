@@ -1049,7 +1049,16 @@ function initFirebase(opts){
       fbDb.collection('yal').doc(_FBDOC).get().then(snap=>{
         const localTs=_localUpdated();
         if(!snap.exists){
-          if(getApps().length)pushToCloud(getApps(),localTs||Date.now(),{silent:true});
+          // Cloud has nothing — push what we have, always with a fresh real
+          // timestamp. NOT "localTs||Date.now()": the seed placeholder marks
+          // itself with localTs=1, which is truthy, so that fallback was
+          // writing the literal number 1 as "updated" straight to the cloud
+          // doc — a corrupted-looking timestamp that's how 8 leftover seed
+          // Apps ended up overwriting real data here.
+          // Also never auto-push placeholder seed data (localTs<=1) even if
+          // the cloud briefly misreads as empty — a flaky read is not
+          // grounds to overwrite real cloud data with 8 sample Apps.
+          if(getApps().length&&localTs>1)pushToCloud(getApps(),Date.now(),{silent:true});
           return;
         }
         const _d=snap.data()||{};
@@ -1057,7 +1066,16 @@ function initFirebase(opts){
         const list=_d.list||[];
         const cloudTs=_d.updated||0;
         if(!list.length){
-          if(getApps().length)pushToCloud(getApps(),localTs||Date.now(),{silent:true});
+          // Cloud has nothing — push what we have, always with a fresh real
+          // timestamp. NOT "localTs||Date.now()": the seed placeholder marks
+          // itself with localTs=1, which is truthy, so that fallback was
+          // writing the literal number 1 as "updated" straight to the cloud
+          // doc — a corrupted-looking timestamp that's how 8 leftover seed
+          // Apps ended up overwriting real data here.
+          // Also never auto-push placeholder seed data (localTs<=1) even if
+          // the cloud briefly misreads as empty — a flaky read is not
+          // grounds to overwrite real cloud data with 8 sample Apps.
+          if(getApps().length&&localTs>1)pushToCloud(getApps(),Date.now(),{silent:true});
           return;
         }
         const localJson=localStorage.getItem(_NS)||'[]';
@@ -1069,7 +1087,9 @@ function initFirebase(opts){
         // Local looks newer than cloud (unsynced changes, e.g. a previous
         // push failed) — push automatically only if it's not a suspicious
         // shrink; a background pass has no user present to confirm one.
-        else if(localTs>0)pushToCloud(getApps(),localTs,{silent:true});
+        // localTs>1 (not >0): localTs===1 is the seed placeholder marker,
+        // never something to push as if it were a real edit.
+        else if(localTs>1)pushToCloud(getApps(),localTs,{silent:true});
       }).catch(e=>console.warn('auto-pull error:',e));
     }).catch(e=>{
       console.warn('Firebase auth error:',e);
