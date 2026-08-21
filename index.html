@@ -959,14 +959,48 @@ async function syncFromCloud(){
   }catch(e){console.warn(e);toast('同步失敗','err');}
 }
 
-async function pushToCloud(apps,ts){
+// A local edit that looks "newer" and gets pushed can otherwise silently
+// replace the whole cloud list — that's exactly how 38 real Apps got wiped
+// by 8 leftover seed placeholders once. Any push that would drop the cloud
+// count by more than this many Apps, and below half of what's there, is
+// treated as suspicious rather than trusted blindly.
+const SHRINK_GUARD_MIN_DROP=5;
+const SHRINK_GUARD_RATIO=0.5;
+
+async function pushToCloud(apps,ts,opts){
   if(!fbDb||!fbReady)return false;
+  opts=opts||{};
   const _k=localStorage.getItem('yal_key')||'';
+  let prevData=null;
+  try{
+    const snap=await fbDb.collection('yal').doc(_FBDOC).get();
+    if(snap.exists)prevData=snap.data()||{};
+  }catch(e){console.warn('pre-push read failed:',e);}
+  const prevList=prevData&&Array.isArray(prevData.list)?prevData.list:null;
+  if(prevList&&!opts.force){
+    const cloudCount=prevList.length;
+    const bigShrink=apps.length<cloudCount-SHRINK_GUARD_MIN_DROP&&apps.length<cloudCount*SHRINK_GUARD_RATIO;
+    if(bigShrink){
+      // Background/auto-sync pushes have no user present to confirm — fail
+      // safe by skipping the write rather than risking a silent wipe. The
+      // user can still push explicitly (which does prompt) once they notice.
+      if(opts.silent){console.warn('pushToCloud blocked: would shrink cloud list from',cloudCount,'to',apps.length);return false;}
+      if(!confirm('⚠️ 即將把雲端資料從 '+cloudCount+' 個 App 大幅減少到 '+apps.length+' 個。\n\n如果不是你刻意大量刪除，請按「取消」避免覆蓋雲端資料。')){
+        toast('已取消推送，避免覆蓋雲端資料','err');
+        return false;
+      }
+    }
+  }
   try{
     // merge:true — a plain .set() replaces the whole doc, which had been
     // silently wiping fields not included in this write (e.g. aiKey) any
     // time a device pushed without one set locally.
-    await fbDb.collection('yal').doc(_FBDOC).set({list:apps,updated:ts||Date.now(),cats:customCats,...(_k?{aiKey:_k}:{})},{merge:true});
+    const payload={list:apps,updated:ts||Date.now(),cats:customCats,...(_k?{aiKey:_k}:{})};
+    // Rolling one-slot server-side backup of whatever was there right before
+    // this write, independent of any device's local storage — a second
+    // recovery path if a bad push ever slips through the guard above.
+    if(prevList&&prevList.length){payload.backupList=prevList;payload.backupUpdated=prevData.updated||null;}
+    await fbDb.collection('yal').doc(_FBDOC).set(payload,{merge:true});
     return true;
   }catch(e){
     console.warn('Firestore write error:',e);
@@ -985,7 +1019,8 @@ const _SHARED_FB={
   appId:"1:538293441872:web:40c9b801e43015d01ac855"
 };
 
-function initFirebase(){
+function initFirebase(opts){
+  opts=opts||{};
   try{
     if(fbApp){try{fbApp.delete();}catch(e){}}
     fbApp=firebase.initializeApp(_SHARED_FB,'yal-shared');
@@ -995,11 +1030,16 @@ function initFirebase(){
     // Anonymous sign-in first — required by security rules (request.auth != null)
     fbApp.auth().signInAnonymously().then(()=>{
       fbReady=true;
-      startSync(); // real-time listener for cross-device sync
-      pushCatsToCloud(); // flush any custom category added while offline/pre-connect
       if(st){st.textContent='✅ 已連線（共用）';st.className='st ok';}
       const info=document.getElementById('fb-info');
       if(info){info.textContent='專案：young-app-library';}
+      // Recovery mode connects read-only — no listener, no auto-push. Any
+      // background auto-sync running while someone is mid-recovery is
+      // exactly the kind of race that can clobber whatever they're trying
+      // to restore before they even get to confirm anything.
+      if(opts.passive)return;
+      startSync(); // real-time listener for cross-device sync
+      pushCatsToCloud(); // flush any custom category added while offline/pre-connect
       // Auto-sync: whichever side (cloud vs local) has the newer timestamp
       // wins. The old logic pulled cloud any time it merely *differed* from
       // local, with no regard for recency — so a local edit made just before
@@ -1009,7 +1049,7 @@ function initFirebase(){
       fbDb.collection('yal').doc(_FBDOC).get().then(snap=>{
         const localTs=_localUpdated();
         if(!snap.exists){
-          if(getApps().length)pushToCloud(getApps(),localTs||Date.now());
+          if(getApps().length)pushToCloud(getApps(),localTs||Date.now(),{silent:true});
           return;
         }
         const _d=snap.data()||{};
@@ -1017,7 +1057,7 @@ function initFirebase(){
         const list=_d.list||[];
         const cloudTs=_d.updated||0;
         if(!list.length){
-          if(getApps().length)pushToCloud(getApps(),localTs||Date.now());
+          if(getApps().length)pushToCloud(getApps(),localTs||Date.now(),{silent:true});
           return;
         }
         const localJson=localStorage.getItem(_NS)||'[]';
@@ -1026,7 +1066,10 @@ function initFirebase(){
           return;
         }
         if(cloudTs>localTs)_adoptCloud(list,cloudTs);
-        else if(localTs>0)pushToCloud(getApps(),localTs); // local has unsynced changes — push instead of discarding them
+        // Local looks newer than cloud (unsynced changes, e.g. a previous
+        // push failed) — push automatically only if it's not a suspicious
+        // shrink; a background pass has no user present to confirm one.
+        else if(localTs>0)pushToCloud(getApps(),localTs,{silent:true});
       }).catch(e=>console.warn('auto-pull error:',e));
     }).catch(e=>{
       console.warn('Firebase auth error:',e);
@@ -1063,7 +1106,8 @@ function seed(){
    scans every key that looks like App data, shows a preview, and lets the
    user manually pick which one to restore — nothing is touched
    automatically. */
-function showRecoveryUI(){
+const _recoveryCandidates={}; // k -> apps[], populated below (localStorage + cloud backup slot)
+async function showRecoveryUI(){
   const found=[];
   for(let i=0;i<localStorage.length;i++){
     const k=localStorage.key(i);
@@ -1071,35 +1115,54 @@ function showRecoveryUI(){
     let apps=null;
     try{apps=JSON.parse(localStorage.getItem(k)||'[]');}catch{}
     if(!Array.isArray(apps))continue;
-    found.push({k,apps});
+    found.push({k,apps,src:'本機'});
+  }
+  // The rolling server-side backup (written on every push since this
+  // safeguard shipped) is a second recovery path independent of any single
+  // device's local storage — surface it here too once it exists.
+  if(fbDb){
+    try{
+      const snap=await fbDb.collection('yal').doc(_FBDOC).get();
+      if(snap.exists){
+        const _d=snap.data()||{};
+        if(Array.isArray(_d.backupList)&&_d.backupList.length)found.push({k:'雲端備份 (backupList)',apps:_d.backupList,src:'雲端'});
+        if(Array.isArray(_d.list)&&_d.list.length)found.push({k:'雲端目前資料 (list)',apps:_d.list,src:'雲端'});
+      }
+    }catch(e){console.warn('recovery cloud fetch failed:',e);}
   }
   found.sort((a,b)=>b.apps.length-a.apps.length);
   const esc2=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const rows=found.map(({k,apps})=>{
+  const rows=found.map(({k,apps,src},i)=>{
+    const rk='cand'+i;
+    _recoveryCandidates[rk]=apps;
     const tagSet=new Set();apps.forEach(a=>(a.tags||[]).forEach(t=>tagSet.add(t)));
     const names=apps.slice(0,8).map(a=>esc2(a.name||a.id||'?')).join('、');
     return `<div style="border:1px solid #3a3a4a;border-radius:10px;padding:14px;margin:12px 0;background:#15151f">
-      <div style="font-weight:700;font-size:15px">${esc2(k)} — ${apps.length} 個 App，${tagSet.size} 個分類</div>
+      <div style="font-weight:700;font-size:15px">[${src}] ${esc2(k)} — ${apps.length} 個 App，${tagSet.size} 個分類</div>
       <div style="color:#9a9ab0;font-size:13px;margin:6px 0">${names}${apps.length>8?'…':''}</div>
       <div style="color:#9a9ab0;font-size:13px">分類：${esc2([...tagSet].join('、')||'（無）')}</div>
-      <button onclick="restoreFromKey('${k.replace(/'/g,"\\'")}')" style="margin-top:10px;padding:10px 18px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:14px">還原這份到雲端</button>
+      <button onclick="restoreFromCandidate('${rk}','${esc2(k)}')" style="margin-top:10px;padding:10px 18px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:14px">還原這份到雲端</button>
     </div>`;
-  }).join('')||'<p>沒有找到任何本機 App 資料。</p>';
+  }).join('')||'<p>沒有找到任何可還原的 App 資料。</p>';
   document.body.insertAdjacentHTML('beforeend',`
     <div id="recoveryOverlay" style="position:fixed;inset:0;background:#0a0a10;color:#fff;z-index:99999;overflow:auto;padding:24px;font-family:-apple-system,sans-serif">
-      <h2 style="margin:0 0 8px">🔧 本機資料還原工具</h2>
-      <p style="color:#9a9ab0">以下是這支裝置瀏覽器裡目前留存的每一份 App 清單快照（依數量由多到少排序）。確認哪一份是你要的完整資料後，按下方按鈕即可還原並推送到雲端；按下前不會做任何改動。</p>
+      <h2 style="margin:0 0 8px">🔧 資料還原工具</h2>
+      <p style="color:#9a9ab0">以下是這支裝置本機、以及雲端備份裡目前找得到的每一份 App 清單快照（依數量由多到少排序）。確認哪一份是你要的完整資料後，按下方按鈕即可還原並推送到雲端；按下前不會做任何改動。</p>
       ${rows}
     </div>`);
 }
-async function restoreFromKey(k){
-  let apps;
-  try{apps=JSON.parse(localStorage.getItem(k)||'[]');}catch{alert('資料格式錯誤，無法還原');return;}
+async function restoreFromCandidate(rk,label){
+  const apps=_recoveryCandidates[rk];
   if(!Array.isArray(apps)||!apps.length){alert('這份資料是空的');return;}
-  if(!confirm('確定要用「'+k+'」這 '+apps.length+' 個 App 覆蓋目前雲端與本機的清單嗎？此動作會覆蓋雲端現有資料。'))return;
-  setApps(apps);
-  await pushToCloud(apps,Date.now());
-  alert('已還原 '+apps.length+' 個 App 並推送到雲端。請移除網址列的 ?recover 後重新整理確認。');
+  if(!confirm('確定要用「'+label+'」這 '+apps.length+' 個 App 覆蓋目前雲端與本機的清單嗎？此動作會覆蓋雲端現有資料。'))return;
+  // Not setApps() — it fires its own unguarded pushToCloud internally, which
+  // would race/duplicate the explicit force-push below.
+  const ts=Date.now();
+  _cache=apps;
+  localStorage.setItem(_NS,JSON.stringify(apps));
+  localStorage.setItem(_UPD,String(ts));
+  const ok=await pushToCloud(apps,ts,{force:true}); // already confirmed above — skip the shrink-guard's own prompt
+  alert(ok?('已還原 '+apps.length+' 個 App 並推送到雲端。請移除網址列的 ?recover 後重新整理確認。'):'本機已還原，但推送到雲端失敗，請確認網路連線後再試一次（不要關閉這個分頁）。');
 }
 
 /* ── Init ── */
@@ -1107,10 +1170,11 @@ window.addEventListener('pageshow',e=>{if(e.persisted&&role)render();});
 document.getElementById('search').value=''; // force clear on every load
 const _recoverMode=new URLSearchParams(location.search).has('recover');
 loadCfg();
-initFirebase();
 if(_recoverMode){
+  initFirebase({passive:true}); // read-only connect — no listener, no auto-push while recovering
   showRecoveryUI();
 }else{
+  initFirebase();
   seed();
   (function init(){
     const saved=localStorage.getItem('yal_role');
