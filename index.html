@@ -431,13 +431,19 @@ const CATS=[
 /* ── State ── */
 let cfg={}, role=null, activeTag='all', editId=null, selEmoji='🗂', tags=[];
 
-/* ── Per-page storage namespace ── */
-const _NS=(function(){
+/* ── Storage namespace ── */
+// Fixed key — must NOT depend on location.pathname, or the same library loaded
+// via a different URL variant (e.g. "/" vs "/index.html") would read a
+// different local cache on first load and appear to have "lost" categories
+// until the cloud snapshot overwrote it back. Old per-path keys (and the even
+// older un-namespaced key) are migrated in once, on first run.
+const _NS='yal_apps';
+const _UPD='yal_updated';
+(function(){
+  if(localStorage.getItem(_NS))return;
   const p=location.pathname.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'root';
-  const k='yal_apps_'+p;
-  if(!localStorage.getItem(k)&&localStorage.getItem('yal_apps'))
-    localStorage.setItem(k,localStorage.getItem('yal_apps'));
-  return k;
+  const old=localStorage.getItem('yal_apps_'+p)||localStorage.getItem('yal_apps_root');
+  if(old)localStorage.setItem(_NS,old);
 })();
 // Fixed cloud document id — must NOT depend on location.pathname, or the same
 // library loaded via a different URL variant (e.g. "/" vs "/index.html") would
@@ -457,7 +463,8 @@ function setApps(a){
   _lastWrite=Date.now();
   _cache=a;
   localStorage.setItem(_NS,JSON.stringify(a));
-  pushToCloud(a);
+  localStorage.setItem(_UPD,String(_lastWrite));
+  pushToCloud(a,_lastWrite);
 }
 
 function loadCfg(){try{cfg=JSON.parse(localStorage.getItem('yal_cfg')||'{}')}catch{cfg={}}}
@@ -850,6 +857,14 @@ function disconnectFirebase(){
   toast('雲端同步已關閉');
 }
 
+function _localUpdated(){return Number(localStorage.getItem(_UPD)||0)}
+function _adoptCloud(list,ts){
+  _cache=list;
+  localStorage.setItem(_NS,JSON.stringify(list));
+  localStorage.setItem(_UPD,String(ts||Date.now()));
+  if(role)render();
+}
+
 function startSync(){
   if(!fbDb)return;
   if(fbUnsub)fbUnsub();
@@ -859,23 +874,22 @@ function startSync(){
       const _d=snap.data()||{};if(_d.aiKey&&!localStorage.getItem('yal_key'))localStorage.setItem('yal_key',_d.aiKey);
       const cloudApps=_d.list||[];
       if(!cloudApps.length)return;
-      // Skip if we just wrote locally (prevents overwriting own changes)
-      if(Date.now()-_lastWrite<5000)return;
+      // Only accept an incoming snapshot if it's actually newer than what we
+      // already have. A blind overwrite here (the old behavior) is what let a
+      // late/stale snapshot silently wipe tags/categories added since.
+      const cloudTs=_d.updated||0;
+      if(cloudTs<=_localUpdated())return;
       const localJson=localStorage.getItem(_NS)||'[]';
-      if(JSON.stringify(cloudApps)===localJson)return;
-      _cache=cloudApps;
-      localStorage.setItem(_NS,JSON.stringify(cloudApps));
-      if(role)render();
+      if(JSON.stringify(cloudApps)===localJson){localStorage.setItem(_UPD,String(cloudTs));return;}
+      _adoptCloud(cloudApps,cloudTs);
     }catch(e){console.warn('onSnapshot:',e);}
   },err=>console.warn('Firestore:',err));
 }
 
 async function pushNow(){
   if(!fbDb||!fbReady){toast('Firebase 未連線','err');return;}
-  try{
-    await pushToCloud(getApps());
-    toast('已推送 '+getApps().length+' 個 App 至雲端');
-  }catch(e){toast('推送失敗','err');}
+  const ok=await pushToCloud(getApps(),Date.now());
+  if(ok)toast('已推送 '+getApps().length+' 個 App 至雲端');
 }
 
 async function syncFromCloud(){
@@ -883,15 +897,26 @@ async function syncFromCloud(){
   try{
     const snap=await fbDb.collection('yal').doc(_FBDOC).get();
     if(!snap.exists||!((snap.data()||{}).list||[]).length){toast('雲端尚無資料','err');return;}
-    const cloudApps=snap.data().list;
-    setApps(cloudApps);render();toast('已從雲端載入 '+cloudApps.length+' 個 App');
+    const _d=snap.data();
+    _adoptCloud(_d.list,_d.updated);
+    render();toast('已從雲端載入 '+_d.list.length+' 個 App');
   }catch(e){console.warn(e);toast('同步失敗','err');}
 }
 
-async function pushToCloud(apps){
-  if(!fbDb||!fbReady)return;
-  const _k=localStorage.getItem('yal_key')||'';try{await fbDb.collection('yal').doc(_FBDOC).set({list:apps,updated:Date.now(),...(_k?{aiKey:_k}:{})});}
-  catch(e){console.warn('Firestore write error:',e);}
+async function pushToCloud(apps,ts){
+  if(!fbDb||!fbReady)return false;
+  const _k=localStorage.getItem('yal_key')||'';
+  try{
+    // merge:true — a plain .set() replaces the whole doc, which had been
+    // silently wiping fields not included in this write (e.g. aiKey) any
+    // time a device pushed without one set locally.
+    await fbDb.collection('yal').doc(_FBDOC).set({list:apps,updated:ts||Date.now(),...(_k?{aiKey:_k}:{})},{merge:true});
+    return true;
+  }catch(e){
+    console.warn('Firestore write error:',e);
+    toast('雲端推送失敗，變更暫時只存在本機','err');
+    return false;
+  }
 }
 
 // Hardcoded shared Firebase config — all users auto-connect
@@ -918,17 +943,32 @@ function initFirebase(){
       if(st){st.textContent='✅ 已連線（共用）';st.className='st ok';}
       const info=document.getElementById('fb-info');
       if(info){info.textContent='專案：young-app-library';}
-      // Auto-pull: update if Firebase data differs from local
+      // Auto-sync: whichever side (cloud vs local) has the newer timestamp
+      // wins. The old logic pulled cloud any time it merely *differed* from
+      // local, with no regard for recency — so a local edit made just before
+      // a slow/failed push would get silently overwritten by the older cloud
+      // copy on the very next reconnect. That's the "categories vanish on
+      // sync" bug.
       fbDb.collection('yal').doc(_FBDOC).get().then(snap=>{
-        if(!snap.exists)return;
-        const list=(snap.data()||{}).list||[];
-        if(!list.length)return;
-        const localJson=localStorage.getItem(_NS)||'[]';
-        if(JSON.stringify(list)!==localJson){
-          _cache=list;
-          localStorage.setItem(_NS,JSON.stringify(list));
-          if(role)render();
+        const localTs=_localUpdated();
+        if(!snap.exists){
+          if(getApps().length)pushToCloud(getApps(),localTs||Date.now());
+          return;
         }
+        const _d=snap.data()||{};
+        const list=_d.list||[];
+        const cloudTs=_d.updated||0;
+        if(!list.length){
+          if(getApps().length)pushToCloud(getApps(),localTs||Date.now());
+          return;
+        }
+        const localJson=localStorage.getItem(_NS)||'[]';
+        if(JSON.stringify(list)===localJson){
+          if(cloudTs>localTs)localStorage.setItem(_UPD,String(cloudTs));
+          return;
+        }
+        if(cloudTs>localTs)_adoptCloud(list,cloudTs);
+        else if(localTs>0)pushToCloud(getApps(),localTs); // local has unsynced changes — push instead of discarding them
       }).catch(e=>console.warn('auto-pull error:',e));
     }).catch(e=>{
       console.warn('Firebase auth error:',e);
@@ -951,6 +991,11 @@ function seed(){
     {id:'s7',url:'https://www.youtube.com',name:'YouTube',emoji:'▶️',desc:'影片平台',tags:['媒體','教育'],vis:true,dl:false,added:now-700},
     {id:'s8',url:'https://www.mint.com',name:'Mint',emoji:'💰',desc:'個人財務管理',tags:['財務'],vis:true,dl:false,added:now-800},
   ]);
+  // Seed content isn't a real user edit — stamp it as ancient so any real
+  // cloud data (with a real "updated" timestamp) is always treated as newer
+  // and wins once Firebase connects, instead of the fresh seed timestamp
+  // winning the race and overwriting real synced data.
+  localStorage.setItem(_UPD,'1');
 }
 
 /* ── Init ── */
