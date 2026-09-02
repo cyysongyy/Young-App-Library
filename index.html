@@ -578,12 +578,23 @@ function enter(){
   activeTag='all';
   document.getElementById('lock').classList.add('off');
   applyRole();
-  // Guest: auto-load from Firebase if connected
+  // Guest: auto-load from Firebase if connected. Read-only adopt — NOT
+  // setApps(), which stamps _UPD with this device's own clock and pushes
+  // back to the cloud. A guest merely viewing the page would then poison
+  // its own local timestamp with "now" instead of the cloud's real
+  // "updated" time, so any later genuine host edit could be misjudged as
+  // "not newer" by the onSnapshot guard and get stuck forever — the
+  // sidebar/category counts go stale until localStorage is manually
+  // cleared. _adoptCloud only updates the local cache, using the cloud's
+  // own timestamp, so real sync keeps working afterwards.
   if(role==='guest'&&fbDb&&fbReady){
     fbDb.collection('yal').doc(_FBDOC).get().then(snap=>{
       if(snap.exists){
-        const list=(snap.data()||{}).list||[];
-        if(list.length){setApps(list);render();}
+        const _d=snap.data()||{};
+        _mergeCats(_d.cats);
+        const list=_d.list||[];
+        const cloudTs=_d.updated||0;
+        if(list.length&&cloudTs>_localUpdated()){_adoptCloud(list,cloudTs);render();}
       }
     }).catch(e=>console.warn('guest sync error:',e));
   }
