@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Young APP Library</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -1241,6 +1244,27 @@ if(_recoverMode){
     }
   })();
 }
+
+/* ── 自動偵測新版本 ──
+   共用裝置（校內 iPad/電腦）常常長時間開著同一分頁，瀏覽器或分頁會沿用
+   進站當下的舊版頁面，之後不管怎麼推新版都看不到，還會誤以為是資料不見
+   了。用 HEAD 比對 ETag/Last-Modified，定期 + 回到前景時偵測到新版就自動
+   重新整理；編輯視窗開著時先不打斷，等下一次偵測再重整。 */
+(function(){
+  let knownTag=null;
+  async function checkFresh(){
+    try{
+      const r=await fetch(location.pathname,{method:'HEAD',cache:'no-store'});
+      const tag=r.headers.get('etag')||r.headers.get('last-modified');
+      if(!tag)return;
+      if(knownTag===null){knownTag=tag;return;}
+      if(tag!==knownTag&&!document.getElementById('mov').classList.contains('open'))location.reload();
+    }catch(e){}
+  }
+  setInterval(checkFresh,5*60*1000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkFresh();});
+  window.addEventListener('pageshow',e=>{if(e.persisted)location.reload();});
+})();
 </script>
 </body>
 </html>
