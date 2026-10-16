@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+  <style>
+    body { background:#f4f7f6; font-family:"Microsoft JhengHei","PingFang TC",sans-serif; min-height:100vh; }
+    .hero-box { border-radius:20px; box-shadow:0 10px 25px rgba(0,0,0,.05); background:#fff; padding:2rem; margin-bottom:1.5rem; }
+    .q-island { background:#fff; border-radius:20px; padding:24px; margin-bottom:24px; border-left:12px solid #28a745; box-shadow:0 8px 20px rgba(0,0,0,.06); }
+    .q-island.done { border-left-color:#1a4fa0; }
+    .hidden { display:none !important; }
+    .progress-track { height:18px; background:#eef2f7; border-radius:10px; margin-bottom:28px; position:relative; border:1px solid #dee2e6; }
+    .rocket { position:absolute; top:-15px; font-size:2rem; transition:left .4s ease; }
+    .sticky-header { position:sticky; top:0; background:#f4f7f6; z-index:1000; padding:10px 0; }
+    .grade-badge { background:#28a745; color:#fff; padding:2px 12px; border-radius:50px; font-size:1rem; margin-right:8px; }
+    .choice { display:block; width:100%; text-align:left; font-size:1.25rem; padding:12px 16px; margin-bottom:10px; border:2px solid #dee2e6; border-radius:14px; background:#fff; }
+    .choice b { display:inline-block; width:2.2em; color:#28a745; }
+    .choice.sel { border-color:#28a745; background:#e8f6ec; font-weight:bold; }
+    .q-text { font-size:1.45rem; font-weight:bold; margin-bottom:14px; line-height:1.6; }
+    .hint { color:#6c757d; font-size:.95rem; margin-top:6px; }
+    .unit-btn .best { display:block; font-size:.8rem; color:#6c757d; }
+    .qr-wrapper { display:inline-block; border:3px solid #1a4fa0; border-radius:16px; padding:10px; background:#fff; }
+    .qr-wrapper img { display:block; width:160px; height:160px; }
+    .res-item { border-radius:14px; padding:12px 14px; margin-bottom:12px; border:1px solid #dee2e6; }
+    .res-ok { background:#e8f6ec; } .res-bad { background:#fdecec; }
+  </style>
+</head>
+<body>
+<div class="container py-4" style="max-width:850px">
+
+  <div id="view-login" class="hero-box text-center animate__animated animate__fadeIn">
+    <h2 class="fw-bold text-success mb-3">🚀 國小數學 1～6 年級<br>數學英雄傳</h2>
+    <div class="mb-4">
+      <div class="qr-wrapper mx-auto"><img id="qr" alt="掃描 QR Code 進入系統"></div>
+      <div class="small text-primary fw-bold mt-2">📱 掃描 QR Code 快速進入</div>
+    </div>
+    <div class="row g-3 mb-4">
+      <div class="col-12"><input type="text" id="p-name" class="form-control form-control-lg text-center" placeholder="輸入英雄姓名"></div>
+      <div class="col-6">
+        <select id="p-class" class="form-select form-select-lg">
+          <option value="" disabled selected>選擇班級</option>
+          <option>一甲</option><option>二甲</option><option>三甲</option>
+          <option>四甲</option><option>五甲</option><option>六甲</option>
+        </select>
+      </div>
+      <div class="col-6"><input type="number" id="p-seat" class="form-control form-control-lg text-center" placeholder="座號" min="1"></div>
+    </div>
+    <div id="login-msg" class="text-danger mb-2"></div>
+    <button class="btn btn-success btn-lg w-100 rounded-pill shadow" onclick="toHome()">進入冒險地圖</button>
+  </div>
+
+  <div id="view-home" class="hero-box hidden animate__animated animate__fadeIn">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <span class="text-secondary">👋 <b id="hello"></b></span>
+      <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="logout()">換人</button>
+    </div>
+    <h4 class="mb-3 text-center text-secondary">🗺️ 選擇年級與學期</h4>
+    <select id="s-grade" class="form-select form-select-lg border-success mb-4 text-center" onchange="loadUnits()">
+      <option value="" disabled selected>請選擇年級...</option>
+      <option value="1上">一年級上學期</option><option value="1下">一年級下學期</option>
+      <option value="2上">二年級上學期</option><option value="2下">二年級下學期</option>
+      <option value="3上">三年級上學期</option><option value="3下">三年級下學期</option>
+      <option value="4上">四年級上學期</option><option value="4下">四年級下學期</option>
+      <option value="5上">五年級上學期</option><option value="5下">五年級下學期</option>
+      <option value="6上">六年級上學期</option><option value="6下">六年級下學期</option>
+    </select>
+    <div id="unit-area" class="hidden">
+      <label class="form-label fw-bold text-success">📍 點擊單元開始挑戰（每單元 10 題）：</label>
+      <div id="unit-btns" class="row g-2"></div>
+    </div>
+  </div>
+
+  <div id="view-quiz" class="hidden">
+    <div class="sticky-header">
+      <div class="progress-track"><div id="p-bar" style="width:0%;height:100%;background:#28a745;border-radius:10px"></div><div id="rocket" class="rocket" style="left:0%">🚀</div></div>
+      <h4 id="u-title" class="fw-bold text-center text-success mb-0"></h4>
+    </div>
+    <div id="q-list"></div>
+    <div id="submit-msg" class="text-center text-danger fw-bold mb-2"></div>
+    <button id="btn-submit" class="btn btn-primary btn-lg w-100 rounded-pill shadow-lg mt-2 py-3" onclick="submit()">完成測驗，送出答案！</button>
+    <button class="btn btn-outline-secondary w-100 mt-3 rounded-pill" onclick="backToMap()">↩️ 回單元清單</button>
+  </div>
+
+  <div id="view-result" class="hero-box text-center hidden">
+    <h2 class="mb-2 text-secondary" id="r-title">測驗結算</h2>
+    <div id="f-score" class="display-1 fw-bold text-success"></div>
+    <div id="f-sub" class="fs-5 text-secondary mb-1"></div>
+    <div id="f-time" class="fs-5 text-secondary mb-3"></div>
+    <div id="f-detail" class="text-start border-top pt-4"></div>
+    <button id="btn-retry" class="btn btn-warning btn-lg mt-3 w-100 rounded-pill shadow hidden" onclick="retryWrong()">🔁 只練習答錯的題目</button>
+    <button class="btn btn-success btn-lg mt-3 w-100 rounded-pill shadow" onclick="backToMap()">🗺️ 挑戰其他單元</button>
+  </div>
+</div>
+
+<script>
+  let player = {}, questions = [], answers = [], curGrade = '', curUnit = '', startTime = null;
+  let practiceIdx = null;           // 錯題練習時：原題號陣列
+  let lastResults = null;
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  };
+
+  // QR code 指向本頁
+  document.getElementById('qr').src = 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=' +
+    encodeURIComponent('<?= ScriptApp.getService().getUrl() ?>');
+
+  (function restore() {
+    const p = store.get('mh_player', null);
+    if (p) { document.getElementById('p-name').value = p.name || ''; document.getElementById('p-class').value = p.gradeClass || ''; document.getElementById('p-seat').value = p.seatNum || ''; }
+  })();
+
+  function switchView(id) {
+    ['view-login','view-home','view-quiz','view-result'].forEach(v => document.getElementById(v).classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+    window.scrollTo(0, 0);
+  }
+
+  function toHome() {
+    player.name = document.getElementById('p-name').value.trim();
+    player.gradeClass = document.getElementById('p-class').value;
+    player.seatNum = document.getElementById('p-seat').value.trim();
+    if (!player.name || !player.gradeClass || !player.seatNum) { document.getElementById('login-msg').innerText = '請填寫姓名、班級與座號！'; return; }
+    document.getElementById('login-msg').innerText = '';
+    store.set('mh_player', player);
+    document.getElementById('hello').innerText = `${player.gradeClass} ${player.seatNum} 號 ${player.name}`;
+    // 依班級自動選年級（上學期），學生仍可自己改
+    const g = '一二三四五六'.indexOf(player.gradeClass.charAt(0)) + 1;
+    switchView('view-home');
+    const sel = document.getElementById('s-grade');
+    if (g > 0 && !sel.value) { sel.value = g + (new Date().getMonth() >= 1 && new Date().getMonth() <= 6 ? '下' : '上'); loadUnits(); }
+  }
+  function logout() { switchView('view-login'); }
+
+  function bestKey() { return `mh_best_${player.gradeClass}_${player.seatNum}_${player.name}`; }
+
+  function loadUnits() {
+    curGrade = document.getElementById('s-grade').value;
+    document.getElementById('unit-area').classList.remove('hidden');
+    const box = document.getElementById('unit-btns');
+    box.innerHTML = "<p class='text-center w-100'>載入清單中...</p>";
+    google.script.run.withSuccessHandler(list => {
+      const best = store.get(bestKey(), {});
+      box.innerHTML = list.length ? list.map((u, i) => {
+        const b = best[curGrade + '|' + u];
+        return `<div class="col-6 col-md-4"><button class="btn btn-outline-success w-100 py-3 unit-btn" data-i="${i}">${esc(u)}<span class="best">${b != null ? '最佳 ' + b + ' 分' + (b === 100 ? ' 🏅' : '') : '尚未挑戰'}</span></button></div>`;
+      }).join('') : "<p class='text-center w-100 text-danger'>此年級目前無單元資料</p>";
+      box.querySelectorAll('.unit-btn').forEach(btn => btn.onclick = () => start(list[+btn.dataset.i]));
+    }).withFailureHandler(e => box.innerHTML = `<p class='text-danger'>讀取失敗：${esc(e.message)}</p>`).getUnitList(curGrade);
+  }
+
+  function start(u) {
+    curUnit = u; practiceIdx = null;
+    switchView('view-quiz');
+    document.getElementById('u-title').innerHTML = `<span class="grade-badge">${esc(curGrade)}</span>${esc(u)}`;
+    document.getElementById('q-list').innerHTML = "<h4 class='text-center p-5'>正在為英雄準備題目...</h4>";
+    google.script.run.withSuccessHandler(data => { questions = data; renderQuiz(); })
+      .withFailureHandler(e => document.getElementById('q-list').innerHTML = `<p class='text-danger'>讀取失敗：${esc(e.message)}</p>`)
+      .getQuestions(curGrade, u);
+  }
+
+  function renderQuiz() {
+    answers = questions.map(() => '');
+    startTime = new Date();
+    document.getElementById('submit-msg').innerText = '';
+    document.getElementById('btn-submit').disabled = false;
+    document.getElementById('q-list').innerHTML = questions.map((q, i) => {
+      const no = practiceIdx ? practiceIdx[i] + 1 : i + 1;
+      const body = q.choices && q.choices.length
+        ? q.choices.map(c => `<button type="button" class="choice" data-q="${i}" data-k="${c.key}"><b>(${c.key})</b>${esc(c.text)}</button>`).join('')
+        : `<input type="text" id="ans-${i}" data-q="${i}" class="form-control form-control-lg border-success q-input" placeholder="請在這裡寫答案" autocomplete="off">
+           <div class="hint">✏️ 作答格式：${esc(q.hint || '(數字)')}${/單位/.test(q.hint) ? '　單位可寫可不寫' : ''}</div>`;
+      return `<div class="q-island" id="qi-${i}"><h5 class="text-success fw-bold">第 ${no} 題［${esc(q.type)}］</h5>
+              <div class="q-text">${esc(q.content)}</div>${body}</div>`;
+    }).join('');
+    document.querySelectorAll('.choice').forEach(b => b.onclick = () => {
+      const i = +b.dataset.q;
+      document.querySelectorAll(`.choice[data-q="${i}"]`).forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel'); answers[i] = b.dataset.k; upP();
+    });
+    document.querySelectorAll('.q-input').forEach(inp => inp.oninput = () => { answers[+inp.dataset.q] = inp.value; upP(); });
+    upP();
+  }
+
+  function upP() {
+    const d = answers.filter(a => String(a).trim()).length;
+    answers.forEach((a, i) => document.getElementById('qi-' + i).classList.toggle('done', !!String(a).trim()));
+    const p = d / (questions.length || 10) * 100;
+    document.getElementById('p-bar').style.width = p + '%';
+    document.getElementById('rocket').style.left = `calc(${p}% - 30px)`;
+  }
+
+  function submit() {
+    const empty = answers.map((a, i) => String(a).trim() ? null : (practiceIdx ? practiceIdx[i] + 1 : i + 1)).filter(Boolean);
+    const msg = document.getElementById('submit-msg');
+    if (empty.length && msg.dataset.warned !== '1') {
+      msg.innerText = `還有第 ${empty.join('、')} 題沒寫，再按一次就直接交卷。`;
+      msg.dataset.warned = '1'; return;
+    }
+    msg.dataset.warned = '';
+    const secs = Math.floor((new Date() - startTime) / 1000);
+    const duration = Math.floor(secs / 60) + '分' + (secs % 60) + '秒';
+    document.getElementById('btn-submit').disabled = true;
+    msg.innerText = '批改中...';
+
+    // 錯題練習：把答案放回原題號位置，其他題留空，不寫入紀錄
+    let payloadAns = answers;
+    if (practiceIdx) { payloadAns = []; practiceIdx.forEach((orig, k) => payloadAns[orig] = answers[k]); }
+
+    google.script.run.withSuccessHandler(res => showResult(res, duration))
+      .withFailureHandler(e => { msg.innerText = '送出失敗：' + e.message; document.getElementById('btn-submit').disabled = false; })
+      .submitAnswers({ ...player, grade: curGrade, unit: curUnit, answers: payloadAns, duration, seconds: secs, practice: !!practiceIdx });
+  }
+
+  function showResult(res, duration) {
+    let results = res.results;
+    if (practiceIdx) results = practiceIdx.map(i => res.results[i]);
+    const right = results.filter(r => r.ok).length;
+    document.getElementById('r-title').innerText = practiceIdx ? '錯題練習結果（不計分）' : '測驗結算';
+    document.getElementById('f-score').innerText = practiceIdx ? `${right} / ${results.length}` : res.score + ' 分';
+    document.getElementById('f-sub').innerText = `答對 ${right} 題，共 ${results.length} 題`;
+    document.getElementById('f-time').innerText = '⏱️ 作答時間：' + duration;
+    document.getElementById('f-detail').innerHTML = results.map(r => `
+      <div class="res-item ${r.ok ? 'res-ok' : 'res-bad'}">
+        <b>${r.ok ? '✅ 正確' : '❌ 再想想'}　第 ${r.no} 題［${esc(r.type)}］</b><br>
+        你的答案：${esc(r.user || '（空白）')}　｜　正解：<b class="text-success">${esc(r.answer)}</b><br>
+        <small class="text-secondary">解析：${esc(r.desc)}</small></div>`).join('');
+    if (!practiceIdx) {
+      const best = store.get(bestKey(), {}), k = curGrade + '|' + curUnit;
+      if (best[k] == null || res.score > best[k]) { best[k] = res.score; store.set(bestKey(), best); }
+      lastResults = res.results;
+    } else if (lastResults) {
+      practiceIdx.forEach(i => lastResults[i] = res.results[i]);   // 練對的題目下次不再出現
+    }
+    const wrong = (practiceIdx ? results : res.results).filter(r => !r.ok);
+    document.getElementById('btn-retry').classList.toggle('hidden', wrong.length === 0);
+    switchView('view-result');
+  }
+
+  function retryWrong() {
+    const src = lastResults || [];
+    const idx = src.map((r, i) => r.ok ? -1 : i).filter(i => i >= 0);
+    if (!idx.length) return;
+    google.script.run.withSuccessHandler(all => {
+      practiceIdx = idx; questions = idx.map(i => all[i]);
+      switchView('view-quiz');
+      document.getElementById('u-title').innerHTML = `<span class="grade-badge">錯題練習</span>${esc(curUnit)}`;
+      renderQuiz();
+    }).getQuestions(curGrade, curUnit);
+  }
+
+  function backToMap() { switchView('view-home'); if (curGrade) loadUnits(); }
+</script>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root { --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#8a8984; --grid:#e8e7e2;
+            --s1:#2a78d6; --critical:#d03b3b; --good:#0ca30c; }
+    body { background:#f4f5f2; color:var(--ink); font-family:"Microsoft JhengHei","PingFang TC",sans-serif; }
+    .card-x { background:var(--surface); border-radius:16px; box-shadow:0 4px 14px rgba(0,0,0,.05); padding:18px; margin-bottom:16px; }
+    .kpi .v { font-size:2rem; font-weight:800; line-height:1.1; }
+    .kpi .l { color:var(--ink2); font-size:.9rem; }
+    h6.t { font-weight:800; margin-bottom:2px; }
+    .sub { color:var(--muted); font-size:.82rem; margin-bottom:10px; }
+    .chart-box { position:relative; height:280px; }
+    .chart-box.tall { height:420px; }
+    .warn { color:var(--critical); font-weight:700; }
+    .filters { position:sticky; top:0; z-index:10; background:#f4f5f2; padding:10px 0; }
+    table.tbl { font-size:.9rem; } table.tbl th { white-space:nowrap; background:#f0f0ec; }
+    .hidden { display:none !important; }
+  </style>
+</head>
+<body>
+<div class="container-xl py-3">
+
+  <div id="login" class="card-x mx-auto mt-5 text-center" style="max-width:380px">
+    <h4 class="fw-bold mb-3">📊 數學英雄傳｜教師後台</h4>
+    <input id="pw" type="password" class="form-control form-control-lg text-center mb-2" placeholder="請輸入後台密碼">
+    <div id="pw-msg" class="text-danger small mb-2"></div>
+    <button class="btn btn-primary btn-lg w-100" onclick="login()">進入</button>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="d-flex flex-wrap justify-content-between align-items-end mb-1">
+      <h4 class="fw-bold mb-0">📊 數學英雄傳｜學習分析</h4>
+      <div class="small text-secondary">資料更新：<span id="updated"></span>
+        <button class="btn btn-sm btn-outline-secondary ms-2" onclick="load()">🔄 重新整理</button></div>
+    </div>
+
+    <div class="filters">
+      <div class="row g-2">
+        <div class="col-6 col-md-3"><select id="f-grade" class="form-select"></select></div>
+        <div class="col-6 col-md-3"><select id="f-class" class="form-select"></select></div>
+        <div class="col-6 col-md-3"><select id="f-range" class="form-select">
+          <option value="all">全部期間</option><option value="7">最近 7 天</option>
+          <option value="30">最近 30 天</option><option value="90">最近 90 天</option></select></div>
+        <div class="col-6 col-md-3"><button class="btn btn-success w-100" onclick="exportCsv()">⬇️ 匯出學生成績 CSV</button></div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-1">
+      <div class="col-6 col-lg-3"><div class="card-x kpi"><div class="l">測驗次數</div><div class="v" id="k-n"></div></div></div>
+      <div class="col-6 col-lg-3"><div class="card-x kpi"><div class="l">參與學生</div><div class="v" id="k-s"></div></div></div>
+      <div class="col-6 col-lg-3"><div class="card-x kpi"><div class="l">平均分數</div><div class="v" id="k-avg"></div></div></div>
+      <div class="col-6 col-lg-3"><div class="card-x kpi"><div class="l">平均作答時間</div><div class="v" id="k-t"></div></div></div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-lg-6"><div class="card-x"><h6 class="t">各班平均分數</h6><div class="sub">每次測驗分數的平均</div><div class="chart-box"><canvas id="c-class"></canvas></div></div></div>
+      <div class="col-lg-6"><div class="card-x"><h6 class="t">分數分布</h6><div class="sub">各分數區間的測驗次數</div><div class="chart-box"><canvas id="c-dist"></canvas></div></div></div>
+      <div class="col-12"><div class="card-x"><h6 class="t">各單元平均分數</h6><div class="sub">由低到高排列；⚠️ 表示平均低於 60 分，建議補強</div><div class="chart-box tall" id="unit-box"><canvas id="c-unit"></canvas></div></div></div>
+      <div class="col-lg-4"><div class="card-x"><h6 class="t">題型答對率</h6><div class="sub">選擇、填充、應用各題型的答對比例</div><div class="chart-box"><canvas id="c-type"></canvas></div></div></div>
+      <div class="col-lg-4"><div class="card-x"><h6 class="t">每日測驗次數</h6><div class="sub">學生使用量的變化</div><div class="chart-box"><canvas id="c-daycount"></canvas></div></div></div>
+      <div class="col-lg-4"><div class="card-x"><h6 class="t">每日平均分數</h6><div class="sub">當天所有測驗的平均</div><div class="chart-box"><canvas id="c-dayavg"></canvas></div></div></div>
+    </div>
+
+    <div class="card-x">
+      <h6 class="t">❗ 最常答錯的題目（前 15 名）</h6><div class="sub">至少 3 人次作答才列入；可直接看出學生最常寫錯的答案</div>
+      <div class="table-responsive"><table class="table table-sm table-hover tbl mb-0"><thead><tr>
+        <th>年級</th><th>單元</th><th>題號</th><th>題型</th><th>題目</th><th>答錯率</th><th>作答人次</th><th>正確答案</th><th>最常見錯答</th></tr></thead>
+        <tbody id="t-hard"></tbody></table></div>
+    </div>
+
+    <div class="card-x">
+      <h6 class="t"><span class="warn">⚠️</span> 需要關注的學生</h6><div class="sub">平均分數低於 60 分，或最近一次測驗低於 60 分</div>
+      <div class="table-responsive"><table class="table table-sm table-hover tbl mb-0"><thead><tr>
+        <th>班級</th><th>座號</th><th>姓名</th><th>測驗次數</th><th>平均</th><th>最近一次</th><th>最弱單元</th></tr></thead>
+        <tbody id="t-focus"></tbody></table></div>
+    </div>
+
+    <div class="card-x">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+        <h6 class="t mb-0">👩‍🎓 全部學生</h6>
+        <input id="q-stu" class="form-control form-control-sm" style="max-width:220px" placeholder="搜尋姓名" oninput="renderStudents()">
+      </div>
+      <div class="table-responsive"><table class="table table-sm table-hover tbl mb-0"><thead><tr>
+        <th>班級</th><th>座號</th><th>姓名</th><th>測驗次數</th><th>完成單元數</th><th>平均</th><th>最高</th><th>最近一次</th><th>最近測驗時間</th></tr></thead>
+        <tbody id="t-stu"></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let RAW = null, charts = {}, PW = '';
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
+  const r1 = x => Math.round(x * 10) / 10;
+  const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+  try { PW = sessionStorage.getItem('mh_pw') || ''; } catch (e) {}
+  if (PW) load();
+  document.getElementById('pw').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+  function login() { PW = document.getElementById('pw').value; load(); }
+  function load() {
+    document.getElementById('pw-msg').innerText = '讀取中...';
+    google.script.run.withSuccessHandler(d => {
+      try { sessionStorage.setItem('mh_pw', PW); } catch (e) {}
+      RAW = d;
+      document.getElementById('login').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      document.getElementById('updated').innerText = d.updated;
+      buildFilters(); render();
+    }).withFailureHandler(e => {
+      try { sessionStorage.removeItem('mh_pw'); } catch (x) {}
+      document.getElementById('app').classList.add('hidden');
+      document.getElementById('login').classList.remove('hidden');
+      document.getElementById('pw-msg').innerText = e.message;
+    }).getDashboard(PW);
+  }
+
+  // logs: [time,name,class,seat,unit,score,grade,secs]
+  // details: [time,name,class,seat,grade,unit,no,type,user,correct,ok]
+  function buildFilters() {
+    const grades = ['1上','1下','2上','2下','3上','3下','4上','4下','5上','5下','6上','6下'];
+    const classes = [...new Set(RAW.logs.map(r => r[2]).filter(Boolean))].sort();
+    const g = document.getElementById('f-grade'), c = document.getElementById('f-class');
+    const gv = g.value, cv = c.value;
+    g.innerHTML = '<option value="">全部年級</option>' + grades.map(x => `<option>${x}</option>`).join('');
+    c.innerHTML = '<option value="">全部班級</option>' + classes.map(x => `<option>${esc(x)}</option>`).join('');
+    g.value = gv; c.value = cv;
+    [g, c, document.getElementById('f-range')].forEach(el => el.onchange = render);
+  }
+
+  function filt(rows, ti, ci, gi) {
+    const g = document.getElementById('f-grade').value, c = document.getElementById('f-class').value;
+    const rg = document.getElementById('f-range').value;
+    const since = rg === 'all' ? '' : new Date(Date.now() - rg * 864e5).toISOString().slice(0, 10);
+    return rows.filter(r => (!g || r[gi] === g) && (!c || r[ci] === c) && (!since || r[ti].slice(0, 10) >= since));
+  }
+
+  function render() {
+    const logs = filt(RAW.logs, 0, 2, 6), det = filt(RAW.details, 0, 2, 4);
+    const sid = r => r[2] + '|' + r[3] + '|' + r[1];
+    document.getElementById('k-n').innerText = logs.length;
+    document.getElementById('k-s').innerText = new Set(logs.map(sid)).size;
+    document.getElementById('k-avg').innerText = logs.length ? r1(avg(logs.map(r => r[5]))) : '—';
+    const secs = logs.map(r => r[7]).filter(x => x > 0);
+    document.getElementById('k-t').innerText = secs.length ? Math.floor(avg(secs) / 60) + '分' + Math.round(avg(secs) % 60) + '秒' : '—';
+
+    // 各班
+    const byClass = group(logs, r => r[2] || '未填');
+    const cl = Object.keys(byClass).sort();
+    bar('c-class', cl, cl.map(k => r1(avg(byClass[k].map(r => r[5])))), { max: 100, suffix: ' 分', counts: cl.map(k => byClass[k].length) });
+
+    // 分數分布
+    const bins = ['0–59', '60–69', '70–79', '80–89', '90–100'];
+    const bc = [0, 0, 0, 0, 0];
+    logs.forEach(r => bc[r[5] < 60 ? 0 : r[5] >= 90 ? 4 : Math.floor(r[5] / 10) - 5]++);
+    bar('c-dist', bins, bc, { suffix: ' 次', integer: true });
+
+    // 各單元
+    const byUnit = group(logs, r => (r[6] ? r[6] + ' ' : '') + r[4]);
+    const ul = Object.keys(byUnit).map(k => ({ k, v: r1(avg(byUnit[k].map(r => r[5]))), n: byUnit[k].length })).sort((a, b) => a.v - b.v).slice(0, 40);
+    document.getElementById('unit-box').style.height = Math.max(240, ul.length * 26 + 60) + 'px';
+    bar('c-unit', ul.map(x => (x.v < 60 ? '⚠️ ' : '') + x.k), ul.map(x => x.v), { max: 100, suffix: ' 分', horizontal: true, counts: ul.map(x => x.n) });
+
+    // 題型
+    const types = ['選擇', '填充', '應用'];
+    const byType = group(det, r => r[7]);
+    bar('c-type', types, types.map(t => byType[t] ? r1(avg(byType[t].map(r => r[10])) * 100) : 0), { max: 100, suffix: '%', counts: types.map(t => (byType[t] || []).length) });
+
+    // 每日
+    const byDay = group(logs, r => r[0].slice(0, 10));
+    const days = Object.keys(byDay).sort();
+    line('c-daycount', days, days.map(d => byDay[d].length), ' 次');
+    line('c-dayavg', days, days.map(d => r1(avg(byDay[d].map(r => r[5])))), ' 分', 100);
+
+    // 最常錯題目
+    const byQ = group(det, r => r[4] + '|' + r[5] + '|' + r[6]);
+    const hard = Object.keys(byQ).map(k => {
+      const rows = byQ[k], wrong = rows.filter(r => !r[10]);
+      const wc = group(wrong.filter(r => String(r[8]).trim()), r => String(r[8]).trim());
+      const top = Object.keys(wc).sort((a, b) => wc[b].length - wc[a].length)[0];
+      const [g, u, no] = k.split('|');
+      return { g, u, no, type: rows[0][7], n: rows.length, rate: wrong.length / rows.length, correct: rows[0][9], top: top ? `${top}（${wc[top].length} 人）` : '多為空白', text: RAW.qText[k] || '' };
+    }).filter(x => x.n >= 3 && x.rate > 0).sort((a, b) => b.rate - a.rate || b.n - a.n).slice(0, 15);
+    document.getElementById('t-hard').innerHTML = hard.length ? hard.map(x => `<tr><td>${esc(x.g)}</td><td>${esc(x.u)}</td><td>${x.no}</td><td>${esc(x.type)}</td>
+      <td style="max-width:320px">${esc(x.text)}</td><td class="${x.rate >= .5 ? 'warn' : ''}">${x.rate >= .5 ? '⚠️ ' : ''}${Math.round(x.rate * 100)}%</td><td>${x.n}</td><td>${esc(x.correct)}</td><td>${esc(x.top)}</td></tr>`).join('')
+      : '<tr><td colspan="9" class="text-secondary">目前資料不足（新版開始記錄每題作答後才會出現）</td></tr>';
+
+    // 學生
+    window._stu = Object.values(group(logs, sid)).map(rows => {
+      rows.sort((a, b) => a[0] < b[0] ? -1 : 1);
+      const last = rows[rows.length - 1];
+      const bu = group(rows, r => (r[6] ? r[6] + ' ' : '') + r[4]);
+      const weak = Object.keys(bu).map(k => ({ k, v: avg(bu[k].map(r => r[5])) })).sort((a, b) => a.v - b.v)[0];
+      return { cls: last[2], seat: last[3], name: last[1], n: rows.length, units: Object.keys(bu).length,
+               avg: r1(avg(rows.map(r => r[5]))), max: Math.max(...rows.map(r => r[5])), last: last[5], lastT: last[0], weak: weak ? `${weak.k}（${r1(weak.v)}）` : '' };
+    }).sort((a, b) => a.cls.localeCompare(b.cls) || (+a.seat - +b.seat));
+    const focus = window._stu.filter(s => s.avg < 60 || s.last < 60).sort((a, b) => a.avg - b.avg);
+    document.getElementById('t-focus').innerHTML = focus.length ? focus.map(s => `<tr><td>${esc(s.cls)}</td><td>${esc(s.seat)}</td><td>${esc(s.name)}</td><td>${s.n}</td>
+      <td class="${s.avg < 60 ? 'warn' : ''}">${s.avg}</td><td class="${s.last < 60 ? 'warn' : ''}">${s.last}</td><td>${esc(s.weak)}</td></tr>`).join('')
+      : '<tr><td colspan="7" class="text-secondary">目前沒有需要特別關注的學生 👍</td></tr>';
+    renderStudents();
+  }
+
+  function renderStudents() {
+    const q = document.getElementById('q-stu').value.trim();
+    const list = (window._stu || []).filter(s => !q || s.name.includes(q));
+    document.getElementById('t-stu').innerHTML = list.map(s => `<tr><td>${esc(s.cls)}</td><td>${esc(s.seat)}</td><td>${esc(s.name)}</td><td>${s.n}</td><td>${s.units}</td>
+      <td class="${s.avg < 60 ? 'warn' : ''}">${s.avg}</td><td>${s.max}</td><td>${s.last}</td><td>${esc(s.lastT)}</td></tr>`).join('') || '<tr><td colspan="9" class="text-secondary">沒有資料</td></tr>';
+  }
+
+  function group(rows, f) { const o = {}; rows.forEach(r => (o[f(r)] = o[f(r)] || []).push(r)); return o; }
+
+  function baseOpts(o) {
+    const grid = css('--grid'), ink = css('--ink2');
+    const val = o.horizontal ? 'x' : 'y', cat = o.horizontal ? 'y' : 'x';
+    const scales = {};
+    scales[val] = { beginAtZero: true, max: o.max, grid: { color: grid }, ticks: { color: ink, precision: o.integer ? 0 : undefined } };
+    scales[cat] = { grid: { display: false }, ticks: { color: ink, autoSkip: !o.horizontal } };
+    return { responsive: true, maintainAspectRatio: false, indexAxis: o.horizontal ? 'y' : 'x', animation: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + c.formattedValue + (o.suffix || '') + (o.counts ? `（${o.counts[c.dataIndex]} 筆）` : '') } } },
+      scales };
+  }
+  function bar(id, labels, data, o) {
+    charts[id] && charts[id].destroy();
+    charts[id] = new Chart(document.getElementById(id), { type: 'bar',
+      data: { labels, datasets: [{ data, backgroundColor: css('--s1'), borderRadius: 4, borderSkipped: 'start', maxBarThickness: 34 }] },
+      options: baseOpts(o) });
+  }
+  function line(id, labels, data, suffix, max) {
+    charts[id] && charts[id].destroy();
+    const o = baseOpts({ suffix, max, integer: !max });
+    o.interaction = { mode: 'index', intersect: false };
+    charts[id] = new Chart(document.getElementById(id), { type: 'line',
+      data: { labels, datasets: [{ data, borderColor: css('--s1'), backgroundColor: css('--s1'), borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, tension: .2 }] },
+      options: o });
+  }
+
+  function exportCsv() {
+    const head = ['班級', '座號', '姓名', '測驗次數', '完成單元數', '平均', '最高', '最近一次', '最近測驗時間', '最弱單元'];
+    const rows = (window._stu || []).map(s => [s.cls, s.seat, s.name, s.n, s.units, s.avg, s.max, s.last, s.lastT, s.weak]);
+    const csv = '﻿' + [head].concat(rows).map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = '數學英雄傳_學生成績_' + new Date().toISOString().slice(0, 10) + '.csv';
+    a.click();
+  }
+</script>
+</body>
+</html>

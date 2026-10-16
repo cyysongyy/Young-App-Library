@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>南一數學題庫</title>
+<style>
+  :root { --bg:#f4f7f6; --card:#fff; --ink:#1d2421; --ink2:#5b6560; --line:#e3e8e5; --pri:#28a745; --pri-d:#1e7e34; --soft:#e8f6ec; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif; }
+  header { background:var(--pri); color:#fff; padding:18px 16px; }
+  header h1 { margin:0; font-size:1.4rem; }
+  header p { margin:4px 0 0; opacity:.9; font-size:.9rem; }
+  .wrap { max-width:960px; margin:0 auto; padding:16px; }
+  .bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px; }
+  .chip { border:2px solid var(--pri); background:#fff; color:var(--pri-d); border-radius:999px; padding:6px 14px; font-size:.95rem; cursor:pointer; }
+  .chip.on { background:var(--pri); color:#fff; }
+  .units { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; margin-bottom:16px; }
+  .unit { background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 12px; cursor:pointer; text-align:left; font-size:.95rem; }
+  .unit.on { border-color:var(--pri); background:var(--soft); font-weight:bold; }
+  .q { background:var(--card); border-radius:14px; padding:14px 16px; margin-bottom:10px; border-left:6px solid var(--pri); }
+  .q .tag { display:inline-block; font-size:.8rem; background:var(--soft); color:var(--pri-d); border-radius:6px; padding:1px 8px; margin-right:6px; }
+  .q .txt { font-size:1.1rem; margin:6px 0; line-height:1.6; }
+  .q ol { margin:4px 0 0; padding-left:0; list-style:none; display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:4px 12px; }
+  .ans { margin-top:8px; padding:8px 10px; background:#f7f9f8; border-radius:8px; font-size:.95rem; color:var(--ink2); }
+  .ans b { color:var(--pri-d); }
+  .hide-ans .ans { display:none; }
+  .tools { margin-left:auto; display:flex; gap:8px; }
+  .btn { border:0; background:var(--ink); color:#fff; border-radius:8px; padding:8px 12px; cursor:pointer; font-size:.9rem; }
+  .btn.lite { background:#fff; color:var(--ink); border:1px solid var(--line); }
+  h2 { font-size:1.2rem; margin:8px 0 12px; }
+  .meta { color:var(--ink2); font-size:.85rem; margin-bottom:10px; }
+  @media print { header, .bar, .units, .tools { display:none !important; } body { background:#fff; } .q { break-inside:avoid; border:1px solid #ccc; } }
+</style>
+</head>
+<body>
+<header><h1>📘 南一版國小數學題庫（115 學年）</h1>
+<p>1～6 年級．每單元 10 題：5 選擇、3 填充、2 應用．搭配「數學英雄傳」使用</p></header>
+<div class="wrap">
+  <div class="bar" id="grades"></div>
+  <div class="units" id="units"></div>
+  <div class="bar"><h2 id="title" style="margin:0"></h2>
+    <div class="tools"><button class="btn lite" id="toggle">隱藏答案</button><button class="btn" onclick="print()">🖨️ 列印本單元</button></div></div>
+  <div class="meta" id="meta"></div>
+  <div id="list"></div>
+</div>
+<script>
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const L = 'ABCD';
+  let UNITS = [], gs = '1上', ui = 0;
+  const gname = g => '一二三四五六'[+g[0] - 1] + '年級' + g[1] + '學期';
+  fetch('units.json').then(r => r.json()).then(d => { UNITS = d; const h = location.hash.slice(1).split('-'); if (h[0]) gs = decodeURIComponent(h[0]); if (h[1]) ui = +h[1]; draw(); });
+  document.getElementById('toggle').onclick = e => { const on = document.body.classList.toggle('hide-ans'); e.target.textContent = on ? '顯示答案' : '隱藏答案'; };
+  function draw() {
+    const keys = [...new Set(UNITS.map(u => u.g + u.s))];
+    document.getElementById('grades').innerHTML = keys.map(k => `<button class="chip ${k === gs ? 'on' : ''}" data-k="${k}">${gname(k)}</button>`).join('');
+    document.querySelectorAll('.chip').forEach(b => b.onclick = () => { gs = b.dataset.k; ui = 0; draw(); });
+    const list = UNITS.filter(u => u.g + u.s === gs);
+    if (ui >= list.length) ui = 0;
+    document.getElementById('units').innerHTML = list.map((u, i) => `<button class="unit ${i === ui ? 'on' : ''}" data-i="${i}">第${u.u}單元 ${esc(u.title)}</button>`).join('');
+    document.querySelectorAll('.unit').forEach(b => b.onclick = () => { ui = +b.dataset.i; draw(); });
+    const u = list[ui]; if (!u) return;
+    location.hash = encodeURIComponent(gs) + '-' + ui;
+    document.getElementById('title').textContent = `${gname(gs)}｜第${u.u}單元 ${u.title}`;
+    document.getElementById('meta').textContent = `共 ${u.qs.length} 題（選擇 ${u.qs.filter(q => q.t === '選擇').length}、填充 ${u.qs.filter(q => q.t === '填充').length}、應用 ${u.qs.filter(q => q.t === '應用').length}）`;
+    document.getElementById('list').innerHTML = u.qs.map((q, i) => {
+      const opts = q.t === '選擇' ? `<ol>${q.o.map((o, k) => `<li>(${L[k]}) ${esc(o)}</li>`).join('')}</ol>` : '';
+      const ans = q.t === '選擇' ? `(${L[q.o.indexOf(q.ans)]}) ${esc(q.ans)}` : esc(q.ans);
+      return `<div class="q"><span class="tag">${i + 1}</span><span class="tag">${q.t}</span><div class="txt">${esc(q.q)}</div>${opts}
+        <div class="ans">答案：<b>${ans}</b>　｜　${esc(q.exp)}</div></div>`;
+    }).join('');
+  }
+</script>
+</body>
+</html>
