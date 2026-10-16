@@ -132,8 +132,8 @@ function shownAnswer_(q, choices) {
 // ───────── 判分與迷思診斷（前端 Index.html 有同一份） ─────────
 function toHalf_(s) {
   return String(s == null ? '' : s)
-    .replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
-    .replace(/　/g, ' ').replace(/[，、]/g, ',').replace(/[。]/g, '');
+    .replace(/[\uFF01-\uFF5E]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/\u3000/g, ' ').replace(/[，、]/g, ',').replace(/[。]/g, '');
 }
 function norm_(s) { return toHalf_(s).toLowerCase().replace(/\s+/g, '').replace(/^\((.*)\)$/, '$1'); }
 function toNum_(s) {

@@ -107,7 +107,7 @@
 
 <script>
   // ───── 判分與迷思診斷（與 Code.gs 相同邏輯） ─────
-  const toHalf = s => String(s == null ? '' : s).replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/　/g, ' ').replace(/[，、]/g, ',').replace(/[。]/g, '');
+  const toHalf = s => String(s == null ? '' : s).replace(/[\uFF01-\uFF5E]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/\u3000/g, ' ').replace(/[，、]/g, ',').replace(/[。]/g, '');
   const norm = s => toHalf(s).toLowerCase().replace(/\s+/g, '').replace(/^\((.*)\)$/, '$1');
   function toNum(s) { s = norm(s); let m;
     if ((m = s.match(/^(\d+)又(\d+)\/(\d+)$/))) return +m[1] + m[2] / m[3];
