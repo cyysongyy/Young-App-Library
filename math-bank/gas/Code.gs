@@ -28,7 +28,7 @@ function doGet(e) {
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('🚀 數學英雄傳')
-    .addItem('📥 從 GitHub 匯入南一題庫（舊題自動備份）', 'importBank')
+    .addItem('📥 從 GitHub 匯入題庫（舊題自動備份）', 'importBank')
     .addItem('👩‍🎓 建立學生名單分頁', 'ensureRoster')
     .addToUi();
 }
