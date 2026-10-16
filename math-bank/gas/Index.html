@@ -7,57 +7,68 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
   <style>
     body { background:#f4f7f6; font-family:"Microsoft JhengHei","PingFang TC",sans-serif; min-height:100vh; }
-    .hero-box { border-radius:20px; box-shadow:0 10px 25px rgba(0,0,0,.05); background:#fff; padding:2rem; margin-bottom:1.5rem; }
-    .q-island { background:#fff; border-radius:20px; padding:24px; margin-bottom:24px; border-left:12px solid #28a745; box-shadow:0 8px 20px rgba(0,0,0,.06); }
-    .q-island.done { border-left-color:#1a4fa0; }
+    .hero-box { border-radius:20px; box-shadow:0 10px 25px rgba(0,0,0,.05); background:#fff; padding:1.6rem; margin-bottom:1.2rem; }
     .hidden { display:none !important; }
-    .progress-track { height:18px; background:#eef2f7; border-radius:10px; margin-bottom:28px; position:relative; border:1px solid #dee2e6; }
-    .rocket { position:absolute; top:-15px; font-size:2rem; transition:left .4s ease; }
-    .sticky-header { position:sticky; top:0; background:#f4f7f6; z-index:1000; padding:10px 0; }
-    .grade-badge { background:#28a745; color:#fff; padding:2px 12px; border-radius:50px; font-size:1rem; margin-right:8px; }
-    .choice { display:block; width:100%; text-align:left; font-size:1.25rem; padding:12px 16px; margin-bottom:10px; border:2px solid #dee2e6; border-radius:14px; background:#fff; }
-    .choice b { display:inline-block; width:2.2em; color:#28a745; }
+    .cls-btn { font-size:1.2rem; padding:12px 0; }
+    .seat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(64px,1fr)); gap:8px; }
+    .seat { border:2px solid #cfe9d6; background:#fff; border-radius:14px; padding:8px 4px; text-align:center; line-height:1.2; }
+    .seat b { display:block; font-size:1.3rem; color:#1e7e34; }
+    .seat small { display:block; font-size:.78rem; color:#555; min-height:1em; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .seat.sel { background:#28a745; border-color:#28a745; } .seat.sel b, .seat.sel small { color:#fff; }
+    .who { font-size:1.6rem; font-weight:800; color:#1e7e34; }
+    .progress-track { height:16px; background:#eef2f7; border-radius:10px; margin:18px 0 22px; position:relative; border:1px solid #dee2e6; }
+    .rocket { position:absolute; top:-16px; font-size:1.9rem; transition:left .4s ease; }
+    .grade-badge { background:#28a745; color:#fff; padding:2px 12px; border-radius:50px; font-size:.95rem; margin-right:8px; }
+    .q-card { background:#fff; border-radius:22px; padding:22px; box-shadow:0 8px 20px rgba(0,0,0,.06); border-left:12px solid #28a745; }
+    .q-meta { color:#28a745; font-weight:800; margin-bottom:6px; }
+    .q-text { font-size:1.5rem; font-weight:800; line-height:1.6; margin-bottom:16px; }
+    .choice { display:block; width:100%; text-align:left; font-size:1.3rem; padding:13px 16px; margin-bottom:10px; border:2px solid #dee2e6; border-radius:14px; background:#fff; }
+    .choice b { display:inline-block; width:2.3em; color:#28a745; }
     .choice.sel { border-color:#28a745; background:#e8f6ec; font-weight:bold; }
-    .q-text { font-size:1.45rem; font-weight:bold; margin-bottom:14px; line-height:1.6; }
+    .choice.right { border-color:#0ca30c; background:#e3f6e3; }
+    .choice.wrong { border-color:#d03b3b; background:#fbe8e8; }
+    .choice:disabled { opacity:1; color:inherit; }
     .hint { color:#6c757d; font-size:.95rem; margin-top:6px; }
-    .unit-btn .best { display:block; font-size:.8rem; color:#6c757d; }
-    .qr-wrapper { display:inline-block; border:3px solid #1a4fa0; border-radius:16px; padding:10px; background:#fff; }
-    .qr-wrapper img { display:block; width:160px; height:160px; }
-    .res-item { border-radius:14px; padding:12px 14px; margin-bottom:12px; border:1px solid #dee2e6; }
+    .fb { border-radius:16px; padding:14px 16px; margin-top:16px; font-size:1.1rem; }
+    .fb.ok { background:#e3f6e3; border:2px solid #0ca30c; }
+    .fb.no { background:#fbe8e8; border:2px solid #d03b3b; }
+    .fb .mis { margin-top:8px; padding:8px 10px; background:#fff; border-radius:10px; font-size:1rem; }
+    .dots { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-bottom:8px; }
+    .dot { width:28px; height:28px; border-radius:50%; background:#e9ecef; color:#555; font-size:.8rem; display:flex; align-items:center; justify-content:center; font-weight:700; }
+    .dot.cur { outline:3px solid #28a745; } .dot.ok { background:#0ca30c; color:#fff; } .dot.no { background:#d03b3b; color:#fff; }
+    .res-item { border-radius:14px; padding:12px 14px; margin-bottom:10px; border:1px solid #dee2e6; }
     .res-ok { background:#e8f6ec; } .res-bad { background:#fdecec; }
+    .unit-btn .best { display:block; font-size:.8rem; color:#6c757d; }
   </style>
 </head>
 <body>
-<div class="container py-4" style="max-width:850px">
+<div class="container py-3" style="max-width:820px">
 
-  <div id="view-login" class="hero-box text-center animate__animated animate__fadeIn">
-    <h2 class="fw-bold text-success mb-3">🚀 國小數學 1～6 年級<br>數學英雄傳</h2>
-    <div class="mb-4">
-      <div class="qr-wrapper mx-auto"><img id="qr" alt="掃描 QR Code 進入系統"></div>
-      <div class="small text-primary fw-bold mt-2">📱 掃描 QR Code 快速進入</div>
+  <!-- 1. 登入：選班級 → 點座號 -->
+  <div id="view-login" class="hero-box animate__animated animate__fadeIn">
+    <h2 class="fw-bold text-success text-center mb-3">🚀 數學英雄傳</h2>
+    <div class="fw-bold mb-2">① 選擇班級</div>
+    <div class="row g-2 mb-3" id="cls-row"></div>
+    <div id="seat-area" class="hidden">
+      <div class="fw-bold mb-2">② 點你的座號</div>
+      <div class="seat-grid mb-3" id="seat-grid"></div>
     </div>
-    <div class="row g-3 mb-4">
-      <div class="col-12"><input type="text" id="p-name" class="form-control form-control-lg text-center" placeholder="輸入英雄姓名"></div>
-      <div class="col-6">
-        <select id="p-class" class="form-select form-select-lg">
-          <option value="" disabled selected>選擇班級</option>
-          <option>一甲</option><option>二甲</option><option>三甲</option>
-          <option>四甲</option><option>五甲</option><option>六甲</option>
-        </select>
-      </div>
-      <div class="col-6"><input type="number" id="p-seat" class="form-control form-control-lg text-center" placeholder="座號" min="1"></div>
+    <div id="confirm-area" class="hidden text-center border-top pt-3">
+      <div class="text-secondary">你是</div>
+      <div class="who mb-2" id="who"></div>
+      <input id="p-name" class="form-control form-control-lg text-center mb-2 hidden" placeholder="名單裡沒有你的名字，請輸入姓名">
+      <button class="btn btn-success btn-lg w-100 rounded-pill shadow" onclick="enter()">✅ 是我，進入冒險地圖</button>
     </div>
-    <div id="login-msg" class="text-danger mb-2"></div>
-    <button class="btn btn-success btn-lg w-100 rounded-pill shadow" onclick="toHome()">進入冒險地圖</button>
+    <div id="login-msg" class="text-danger text-center mt-2"></div>
   </div>
 
+  <!-- 2. 選單元 -->
   <div id="view-home" class="hero-box hidden animate__animated animate__fadeIn">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <span class="text-secondary">👋 <b id="hello"></b></span>
       <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="logout()">換人</button>
     </div>
-    <h4 class="mb-3 text-center text-secondary">🗺️ 選擇年級與學期</h4>
-    <select id="s-grade" class="form-select form-select-lg border-success mb-4 text-center" onchange="loadUnits()">
+    <select id="s-grade" class="form-select form-select-lg border-success mb-3 text-center" onchange="loadUnits()">
       <option value="" disabled selected>請選擇年級...</option>
       <option value="1上">一年級上學期</option><option value="1下">一年級下學期</option>
       <option value="2上">二年級上學期</option><option value="2下">二年級下學期</option>
@@ -67,77 +78,129 @@
       <option value="6上">六年級上學期</option><option value="6下">六年級下學期</option>
     </select>
     <div id="unit-area" class="hidden">
-      <label class="form-label fw-bold text-success">📍 點擊單元開始挑戰（每單元 10 題）：</label>
+      <label class="form-label fw-bold text-success">📍 點擊單元開始挑戰（每單元 10 題，每題馬上知道對錯）：</label>
       <div id="unit-btns" class="row g-2"></div>
     </div>
   </div>
 
+  <!-- 3. 作答：一次一題，立即回饋 -->
   <div id="view-quiz" class="hidden">
-    <div class="sticky-header">
-      <div class="progress-track"><div id="p-bar" style="width:0%;height:100%;background:#28a745;border-radius:10px"></div><div id="rocket" class="rocket" style="left:0%">🚀</div></div>
-      <h4 id="u-title" class="fw-bold text-center text-success mb-0"></h4>
-    </div>
-    <div id="q-list"></div>
-    <div id="submit-msg" class="text-center text-danger fw-bold mb-2"></div>
-    <button id="btn-submit" class="btn btn-primary btn-lg w-100 rounded-pill shadow-lg mt-2 py-3" onclick="submit()">完成測驗，送出答案！</button>
-    <button class="btn btn-outline-secondary w-100 mt-3 rounded-pill" onclick="backToMap()">↩️ 回單元清單</button>
+    <h5 id="u-title" class="fw-bold text-center text-success mt-1 mb-0"></h5>
+    <div class="progress-track"><div id="p-bar" style="width:0%;height:100%;background:#28a745;border-radius:10px"></div><div id="rocket" class="rocket" style="left:0%">🚀</div></div>
+    <div class="dots" id="dots"></div>
+    <div class="q-card animate__animated" id="q-card"></div>
+    <button class="btn btn-outline-secondary w-100 mt-3 rounded-pill" onclick="backToMap()">↩️ 離開（這次不計分）</button>
   </div>
 
+  <!-- 4. 結算 -->
   <div id="view-result" class="hero-box text-center hidden">
     <h2 class="mb-2 text-secondary" id="r-title">測驗結算</h2>
     <div id="f-score" class="display-1 fw-bold text-success"></div>
-    <div id="f-sub" class="fs-5 text-secondary mb-1"></div>
-    <div id="f-time" class="fs-5 text-secondary mb-3"></div>
-    <div id="f-detail" class="text-start border-top pt-4"></div>
-    <button id="btn-retry" class="btn btn-warning btn-lg mt-3 w-100 rounded-pill shadow hidden" onclick="retryWrong()">🔁 只練習答錯的題目</button>
+    <div id="f-sub" class="fs-5 text-secondary"></div>
+    <div id="f-time" class="fs-6 text-secondary mb-2"></div>
+    <div id="f-save" class="small text-secondary mb-3"></div>
+    <div id="f-detail" class="text-start border-top pt-3"></div>
+    <button id="btn-retry" class="btn btn-warning btn-lg mt-2 w-100 rounded-pill shadow hidden" onclick="retryWrong()">🔁 再練一次答錯的題目</button>
     <button class="btn btn-success btn-lg mt-3 w-100 rounded-pill shadow" onclick="backToMap()">🗺️ 挑戰其他單元</button>
   </div>
 </div>
 
 <script>
-  let player = {}, questions = [], answers = [], curGrade = '', curUnit = '', startTime = null;
-  let practiceIdx = null;           // 錯題練習時：原題號陣列
-  let lastResults = null;
+  // ───── 判分與迷思診斷（與 Code.gs 相同邏輯） ─────
+  const toHalf = s => String(s == null ? '' : s).replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/　/g, ' ').replace(/[，、]/g, ',').replace(/[。]/g, '');
+  const norm = s => toHalf(s).toLowerCase().replace(/\s+/g, '').replace(/^\((.*)\)$/, '$1');
+  function toNum(s) { s = norm(s); let m;
+    if ((m = s.match(/^(\d+)又(\d+)\/(\d+)$/))) return +m[1] + m[2] / m[3];
+    if ((m = s.match(/^(\d+)\/(\d+)$/))) return m[2] == 0 ? NaN : m[1] / m[2];
+    if (/^-?\d+(\.\d+)?$/.test(s)) return parseFloat(s); return NaN; }
+  function splitUnit(s) { const m = norm(s).match(/^(\d+又\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)(.*)$/); return m && !/\d/.test(m[2]) ? { num: m[1], unit: m[2] } : null; }
+  const numEq = (a, b) => { const x = toNum(a), y = toNum(b); return !isNaN(x) && !isNaN(y) && Math.abs(x - y) < 1e-9; };
+  function isCorrect(user, correct, type, strict) {
+    const u = norm(user), c = norm(correct); if (!u) return false;
+    if (type === '選擇') return u.replace(/[^a-d]/g, '').charAt(0) === c.replace(/[^a-d]/g, '').charAt(0);
+    if (u === c) return true;
+    if (strict) { const cu = splitUnit(c), uu = splitUnit(u); return !!(cu && ((uu && uu.unit === '' && uu.num === cu.num) || u === cu.num)); }
+    if (numEq(u, c)) return true;
+    const cu = splitUnit(c), uu = splitUnit(u);
+    if (cu && uu && (uu.unit === '' || uu.unit === cu.unit)) return numEq(uu.num, cu.num);
+    return !!(cu && !uu && numEq(u, cu.num));
+  }
+  function diagnose(user, q) {
+    let fb = '';
+    for (const part of String(q.mis || '').split(';')) {
+      const i = part.indexOf('='); if (i < 0) continue;
+      const label = part.slice(i + 1).trim();
+      for (let k of part.slice(0, i).split(',')) { k = k.trim();
+        if (k === '*') { fb = label; continue; }
+        if (isCorrect(user, k, q.type === '選擇' ? '選擇' : '填充', q.strict)) return label; }
+    }
+    return fb;
+  }
 
+  // ───── 狀態 ─────
+  let ROSTER = {}, player = {}, questions = [], answers = [], checked = [], cur = 0;
+  let curGrade = '', curUnit = '', startTime = null, practiceIdx = null, lastResults = null;
+  const CLASSES = ['一甲','二甲','三甲','四甲','五甲','六甲'];
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const store = {
-    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
-    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
-  };
-
-  // QR code 指向本頁
-  document.getElementById('qr').src = 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=' +
-    encodeURIComponent('<?= ScriptApp.getService().getUrl() ?>');
-
-  (function restore() {
-    const p = store.get('mh_player', null);
-    if (p) { document.getElementById('p-name').value = p.name || ''; document.getElementById('p-class').value = p.gradeClass || ''; document.getElementById('p-seat').value = p.seatNum || ''; }
-  })();
+  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+                  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
+  const params = (() => { try { return new URLSearchParams(window.location.search); } catch (e) { return new URLSearchParams(''); } })();
 
   function switchView(id) {
     ['view-login','view-home','view-quiz','view-result'].forEach(v => document.getElementById(v).classList.add('hidden'));
-    document.getElementById(id).classList.remove('hidden');
-    window.scrollTo(0, 0);
+    document.getElementById(id).classList.remove('hidden'); window.scrollTo(0, 0);
   }
 
-  function toHome() {
-    player.name = document.getElementById('p-name').value.trim();
-    player.gradeClass = document.getElementById('p-class').value;
-    player.seatNum = document.getElementById('p-seat').value.trim();
-    if (!player.name || !player.gradeClass || !player.seatNum) { document.getElementById('login-msg').innerText = '請填寫姓名、班級與座號！'; return; }
+  // ───── 登入 ─────
+  document.getElementById('cls-row').innerHTML = CLASSES.map(c => `<div class="col-4"><button class="btn btn-outline-success w-100 cls-btn" data-c="${c}">${c}</button></div>`).join('');
+  document.querySelectorAll('.cls-btn').forEach(b => b.onclick = () => pickClass(b.dataset.c));
+
+  google.script.run.withSuccessHandler(r => {
+    ROSTER = r || {};
+    // 專屬 QR：網址帶 ?c=三甲&s=5 直接選好
+    const pc = params.get('c'), ps = params.get('s');
+    const last = store.get('mh_player', null);
+    if (pc) { pickClass(pc); if (ps) pickSeat(ps); }
+    else if (last && last.gradeClass) { pickClass(last.gradeClass); if (last.seatNum) pickSeat(last.seatNum); }
+  }).withFailureHandler(() => {}).getRoster();
+
+  function pickClass(c) {
+    player.gradeClass = c; player.seatNum = ''; player.name = '';
+    document.querySelectorAll('.cls-btn').forEach(b => { b.classList.toggle('btn-success', b.dataset.c === c); b.classList.toggle('btn-outline-success', b.dataset.c !== c); });
+    const names = ROSTER[c] || {};
+    const max = Math.max(30, ...Object.keys(names).map(Number).filter(n => n > 0));
+    const seats = Object.keys(names).length ? Object.keys(names).map(Number).sort((a, b) => a - b) : Array.from({ length: max }, (_, i) => i + 1);
+    document.getElementById('seat-grid').innerHTML = seats.map(s => `<button class="seat" data-s="${s}"><b>${s}</b><small>${esc(names[s] || '')}</small></button>`).join('');
+    document.querySelectorAll('.seat').forEach(b => b.onclick = () => pickSeat(b.dataset.s));
+    document.getElementById('seat-area').classList.remove('hidden');
+    document.getElementById('confirm-area').classList.add('hidden');
+  }
+  function pickSeat(s) {
+    player.seatNum = String(s);
+    document.querySelectorAll('.seat').forEach(b => b.classList.toggle('sel', b.dataset.s === String(s)));
+    const name = (ROSTER[player.gradeClass] || {})[s] || '';
+    const inp = document.getElementById('p-name');
+    player.name = name;
+    document.getElementById('who').innerText = `${player.gradeClass} ${s} 號 ${name}`;
+    inp.classList.toggle('hidden', !!name);
+    if (!name) { const last = store.get('mh_player', {}); inp.value = last.gradeClass === player.gradeClass && last.seatNum === player.seatNum ? (last.name || '') : ''; }
+    document.getElementById('confirm-area').classList.remove('hidden');
+  }
+  function enter() {
+    if (!player.name) player.name = document.getElementById('p-name').value.trim();
+    if (!player.gradeClass || !player.seatNum || !player.name) { document.getElementById('login-msg').innerText = '請選班級、座號，並確認姓名！'; return; }
     document.getElementById('login-msg').innerText = '';
     store.set('mh_player', player);
+    google.script.run.logLogin({ ...player, device: navigator.userAgent.includes('Mobile') ? '手機/平板' : '電腦' });
     document.getElementById('hello').innerText = `${player.gradeClass} ${player.seatNum} 號 ${player.name}`;
-    // 依班級自動選年級（上學期），學生仍可自己改
-    const g = '一二三四五六'.indexOf(player.gradeClass.charAt(0)) + 1;
     switchView('view-home');
-    const sel = document.getElementById('s-grade');
-    if (g > 0 && !sel.value) { sel.value = g + (new Date().getMonth() >= 1 && new Date().getMonth() <= 6 ? '下' : '上'); loadUnits(); }
+    const g = '一二三四五六'.indexOf(player.gradeClass.charAt(0)) + 1, sel = document.getElementById('s-grade');
+    if (g > 0) { const m = new Date().getMonth() + 1; sel.value = g + (m >= 2 && m <= 7 ? '下' : '上'); loadUnits(); }
   }
   function logout() { switchView('view-login'); }
 
-  function bestKey() { return `mh_best_${player.gradeClass}_${player.seatNum}_${player.name}`; }
-
+  // ───── 單元 ─────
+  const bestKey = () => `mh_best_${player.gradeClass}_${player.seatNum}_${player.name}`;
   function loadUnits() {
     curGrade = document.getElementById('s-grade').value;
     document.getElementById('unit-area').classList.remove('hidden');
@@ -145,10 +208,9 @@
     box.innerHTML = "<p class='text-center w-100'>載入清單中...</p>";
     google.script.run.withSuccessHandler(list => {
       const best = store.get(bestKey(), {});
-      box.innerHTML = list.length ? list.map((u, i) => {
-        const b = best[curGrade + '|' + u];
-        return `<div class="col-6 col-md-4"><button class="btn btn-outline-success w-100 py-3 unit-btn" data-i="${i}">${esc(u)}<span class="best">${b != null ? '最佳 ' + b + ' 分' + (b === 100 ? ' 🏅' : '') : '尚未挑戰'}</span></button></div>`;
-      }).join('') : "<p class='text-center w-100 text-danger'>此年級目前無單元資料</p>";
+      box.innerHTML = list.length ? list.map((u, i) => { const b = best[curGrade + '|' + u];
+        return `<div class="col-6 col-md-4"><button class="btn btn-outline-success w-100 py-3 unit-btn" data-i="${i}">${esc(u)}<span class="best">${b != null ? '最佳 ' + b + ' 分' + (b === 100 ? ' 🏅' : '') : '尚未挑戰'}</span></button></div>`; }).join('')
+        : "<p class='text-center w-100 text-danger'>此年級目前無單元資料</p>";
       box.querySelectorAll('.unit-btn').forEach(btn => btn.onclick = () => start(list[+btn.dataset.i]));
     }).withFailureHandler(e => box.innerHTML = `<p class='text-danger'>讀取失敗：${esc(e.message)}</p>`).getUnitList(curGrade);
   }
@@ -157,99 +219,114 @@
     curUnit = u; practiceIdx = null;
     switchView('view-quiz');
     document.getElementById('u-title').innerHTML = `<span class="grade-badge">${esc(curGrade)}</span>${esc(u)}`;
-    document.getElementById('q-list').innerHTML = "<h4 class='text-center p-5'>正在為英雄準備題目...</h4>";
-    google.script.run.withSuccessHandler(data => { questions = data; renderQuiz(); })
-      .withFailureHandler(e => document.getElementById('q-list').innerHTML = `<p class='text-danger'>讀取失敗：${esc(e.message)}</p>`)
+    document.getElementById('q-card').innerHTML = "<h4 class='text-center p-4'>正在為英雄準備題目...</h4>";
+    document.getElementById('dots').innerHTML = '';
+    google.script.run.withSuccessHandler(data => { questions = data; begin(); })
+      .withFailureHandler(e => document.getElementById('q-card').innerHTML = `<p class='text-danger'>讀取失敗：${esc(e.message)}</p>`)
       .getQuestions(curGrade, u);
   }
 
-  function renderQuiz() {
-    answers = questions.map(() => '');
-    startTime = new Date();
-    document.getElementById('submit-msg').innerText = '';
-    document.getElementById('btn-submit').disabled = false;
-    document.getElementById('q-list').innerHTML = questions.map((q, i) => {
-      const no = practiceIdx ? practiceIdx[i] + 1 : i + 1;
-      const body = q.choices && q.choices.length
-        ? q.choices.map(c => `<button type="button" class="choice" data-q="${i}" data-k="${c.key}"><b>(${c.key})</b>${esc(c.text)}</button>`).join('')
-        : `<input type="text" id="ans-${i}" data-q="${i}" class="form-control form-control-lg border-success q-input" placeholder="請在這裡寫答案" autocomplete="off">
-           <div class="hint">✏️ 作答格式：${esc(q.hint || '(數字)')}${/單位/.test(q.hint) ? '　單位可寫可不寫' : ''}</div>`;
-      return `<div class="q-island" id="qi-${i}"><h5 class="text-success fw-bold">第 ${no} 題［${esc(q.type)}］</h5>
-              <div class="q-text">${esc(q.content)}</div>${body}</div>`;
-    }).join('');
-    document.querySelectorAll('.choice').forEach(b => b.onclick = () => {
-      const i = +b.dataset.q;
-      document.querySelectorAll(`.choice[data-q="${i}"]`).forEach(x => x.classList.remove('sel'));
-      b.classList.add('sel'); answers[i] = b.dataset.k; upP();
-    });
-    document.querySelectorAll('.q-input').forEach(inp => inp.oninput = () => { answers[+inp.dataset.q] = inp.value; upP(); });
-    upP();
+  function begin() {
+    answers = questions.map(() => ''); checked = questions.map(() => null); cur = 0; startTime = new Date();
+    showQ();
   }
+  const qNo = i => practiceIdx ? practiceIdx[i] + 1 : i + 1;
 
-  function upP() {
-    const d = answers.filter(a => String(a).trim()).length;
-    answers.forEach((a, i) => document.getElementById('qi-' + i).classList.toggle('done', !!String(a).trim()));
-    const p = d / (questions.length || 10) * 100;
+  function showQ() {
+    const q = questions[cur];
+    document.getElementById('dots').innerHTML = questions.map((_, i) => `<div class="dot ${i === cur ? 'cur' : ''} ${checked[i] === true ? 'ok' : checked[i] === false ? 'no' : ''}">${qNo(i)}</div>`).join('');
+    const done = checked.filter(x => x !== null).length, p = done / questions.length * 100;
     document.getElementById('p-bar').style.width = p + '%';
-    document.getElementById('rocket').style.left = `calc(${p}% - 30px)`;
+    document.getElementById('rocket').style.left = `calc(${p}% - 28px)`;
+    const body = q.choices.length
+      ? q.choices.map(c => `<button type="button" class="choice" data-k="${c.key}"><b>(${c.key})</b>${esc(c.text)}</button>`).join('')
+      : `<input type="text" id="ans" class="form-control form-control-lg border-success" placeholder="請在這裡寫答案" autocomplete="off" inputmode="text">
+         <div class="hint">✏️ 作答格式：${esc(q.hint || '(數字)')}${/單位/.test(q.hint) ? '　單位可寫可不寫' : ''}</div>`;
+    const card = document.getElementById('q-card');
+    card.innerHTML = `<div class="q-meta">第 ${qNo(cur)} 題［${esc(q.type)}］　${cur + 1} / ${questions.length}</div>
+      <div class="q-text">${esc(q.content)}</div>${body}
+      <div id="fb"></div>
+      <button id="btn-check" class="btn btn-primary btn-lg w-100 rounded-pill mt-3" disabled>確認答案</button>`;
+    card.classList.remove('animate__fadeInRight'); void card.offsetWidth; card.classList.add('animate__fadeInRight');
+    const btn = document.getElementById('btn-check');
+    card.querySelectorAll('.choice').forEach(b => b.onclick = () => {
+      if (checked[cur] !== null) return;
+      card.querySelectorAll('.choice').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel'); answers[cur] = b.dataset.k; btn.disabled = false;
+    });
+    const inp = document.getElementById('ans');
+    if (inp) { inp.oninput = () => { answers[cur] = inp.value; btn.disabled = !inp.value.trim(); };
+               inp.onkeydown = e => { if (e.key === 'Enter' && inp.value.trim()) check(); }; inp.focus(); }
+    btn.onclick = check;
   }
 
-  function submit() {
-    const empty = answers.map((a, i) => String(a).trim() ? null : (practiceIdx ? practiceIdx[i] + 1 : i + 1)).filter(Boolean);
-    const msg = document.getElementById('submit-msg');
-    if (empty.length && msg.dataset.warned !== '1') {
-      msg.innerText = `還有第 ${empty.join('、')} 題沒寫，再按一次就直接交卷。`;
-      msg.dataset.warned = '1'; return;
-    }
-    msg.dataset.warned = '';
+  function check() {
+    const q = questions[cur], ua = answers[cur];
+    const ok = isCorrect(ua, q.answer, q.type, q.strict);
+    checked[cur] = ok;
+    const card = document.getElementById('q-card');
+    card.querySelectorAll('.choice').forEach(b => { b.disabled = true;
+      if (b.dataset.k === q.answer.toUpperCase()) b.classList.add('right');
+      else if (b.dataset.k === ua && !ok) b.classList.add('wrong'); });
+    const inp = document.getElementById('ans'); if (inp) inp.disabled = true;
+    const mis = ok ? '' : diagnose(ua, q);
+    document.getElementById('fb').innerHTML = ok
+      ? `<div class="fb ok animate__animated animate__bounceIn">🎉 <b>答對了！</b><br><small>${esc(q.desc)}</small></div>`
+      : `<div class="fb no animate__animated animate__headShake">💪 <b>再想想！</b>正確答案是 <b>${esc(q.shown)}</b><br><small>${esc(q.desc)}</small>
+          ${mis ? `<div class="mis">🧠 小提醒：你可能是「${esc(mis)}」</div>` : ''}</div>`;
+    const btn = document.getElementById('btn-check');
+    const last = cur === questions.length - 1;
+    btn.disabled = false; btn.className = 'btn btn-success btn-lg w-100 rounded-pill mt-3';
+    btn.innerText = last ? '🏁 看成績' : '下一題 ➜';
+    btn.onclick = () => { if (last) finish(); else { cur++; showQ(); } };
+    showDotsOnly();
+  }
+  function showDotsOnly() {
+    document.querySelectorAll('.dot').forEach((d, i) => { d.classList.toggle('ok', checked[i] === true); d.classList.toggle('no', checked[i] === false); });
+    const done = checked.filter(x => x !== null).length, p = done / questions.length * 100;
+    document.getElementById('p-bar').style.width = p + '%'; document.getElementById('rocket').style.left = `calc(${p}% - 28px)`;
+  }
+
+  function finish() {
     const secs = Math.floor((new Date() - startTime) / 1000);
     const duration = Math.floor(secs / 60) + '分' + (secs % 60) + '秒';
-    document.getElementById('btn-submit').disabled = true;
-    msg.innerText = '批改中...';
-
-    // 錯題練習：把答案放回原題號位置，其他題留空，不寫入紀錄
-    let payloadAns = answers;
-    if (practiceIdx) { payloadAns = []; practiceIdx.forEach((orig, k) => payloadAns[orig] = answers[k]); }
-
-    google.script.run.withSuccessHandler(res => showResult(res, duration))
-      .withFailureHandler(e => { msg.innerText = '送出失敗：' + e.message; document.getElementById('btn-submit').disabled = false; })
-      .submitAnswers({ ...player, grade: curGrade, unit: curUnit, answers: payloadAns, duration, seconds: secs, practice: !!practiceIdx });
-  }
-
-  function showResult(res, duration) {
-    let results = res.results;
-    if (practiceIdx) results = practiceIdx.map(i => res.results[i]);
-    const right = results.filter(r => r.ok).length;
+    const right = checked.filter(Boolean).length;
+    // 先在本機顯示結果，再送後端存檔
+    const local = questions.map((q, i) => ({ no: qNo(i), type: q.type, user: answers[i], ok: checked[i], answer: q.shown, desc: q.desc, mis: checked[i] ? '' : diagnose(answers[i], q) }));
+    const score = Math.round(right / questions.length * 100);
     document.getElementById('r-title').innerText = practiceIdx ? '錯題練習結果（不計分）' : '測驗結算';
-    document.getElementById('f-score').innerText = practiceIdx ? `${right} / ${results.length}` : res.score + ' 分';
-    document.getElementById('f-sub').innerText = `答對 ${right} 題，共 ${results.length} 題`;
+    document.getElementById('f-score').innerText = practiceIdx ? `${right} / ${questions.length}` : score + ' 分';
+    document.getElementById('f-sub').innerText = `答對 ${right} 題，共 ${questions.length} 題`;
     document.getElementById('f-time').innerText = '⏱️ 作答時間：' + duration;
-    document.getElementById('f-detail').innerHTML = results.map(r => `
-      <div class="res-item ${r.ok ? 'res-ok' : 'res-bad'}">
-        <b>${r.ok ? '✅ 正確' : '❌ 再想想'}　第 ${r.no} 題［${esc(r.type)}］</b><br>
-        你的答案：${esc(r.user || '（空白）')}　｜　正解：<b class="text-success">${esc(r.answer)}</b><br>
-        <small class="text-secondary">解析：${esc(r.desc)}</small></div>`).join('');
+    document.getElementById('f-detail').innerHTML = local.map(r => `<div class="res-item ${r.ok ? 'res-ok' : 'res-bad'}">
+        <b>${r.ok ? '✅' : '❌'} 第 ${r.no} 題</b>　你的答案：${esc(r.user || '（空白）')}　｜　正解：<b class="text-success">${esc(r.answer)}</b>
+        ${r.mis ? `<br><small>🧠 ${esc(r.mis)}</small>` : ''}</div>`).join('');
+    const saveEl = document.getElementById('f-save');
     if (!practiceIdx) {
       const best = store.get(bestKey(), {}), k = curGrade + '|' + curUnit;
-      if (best[k] == null || res.score > best[k]) { best[k] = res.score; store.set(bestKey(), best); }
-      lastResults = res.results;
-    } else if (lastResults) {
-      practiceIdx.forEach(i => lastResults[i] = res.results[i]);   // 練對的題目下次不再出現
+      if (best[k] == null || score > best[k]) { best[k] = score; store.set(bestKey(), best); }
+      lastResults = local.map(r => ({ ok: r.ok }));
+      saveEl.innerText = '☁️ 成績上傳中...';
+      google.script.run.withSuccessHandler(() => saveEl.innerText = '✅ 成績已送給老師')
+        .withFailureHandler(e => saveEl.innerText = '⚠️ 成績上傳失敗，請告訴老師：' + e.message)
+        .submitAnswers({ ...player, grade: curGrade, unit: curUnit, answers, duration, seconds: secs });
+    } else {
+      saveEl.innerText = '';
+      practiceIdx.forEach((orig, i) => { if (checked[i]) lastResults[orig] = { ok: true }; });
     }
-    const wrong = (practiceIdx ? results : res.results).filter(r => !r.ok);
-    document.getElementById('btn-retry').classList.toggle('hidden', wrong.length === 0);
+    const wrongLeft = (lastResults || []).some(r => !r.ok);
+    document.getElementById('btn-retry').classList.toggle('hidden', !wrongLeft);
     switchView('view-result');
   }
 
   function retryWrong() {
-    const src = lastResults || [];
-    const idx = src.map((r, i) => r.ok ? -1 : i).filter(i => i >= 0);
+    const idx = (lastResults || []).map((r, i) => r.ok ? -1 : i).filter(i => i >= 0);
     if (!idx.length) return;
     google.script.run.withSuccessHandler(all => {
       practiceIdx = idx; questions = idx.map(i => all[i]);
       switchView('view-quiz');
       document.getElementById('u-title').innerHTML = `<span class="grade-badge">錯題練習</span>${esc(curUnit)}`;
-      renderQuiz();
+      begin();
     }).getQuestions(curGrade, curUnit);
   }
 

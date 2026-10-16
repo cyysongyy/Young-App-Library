@@ -6,25 +6,27 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
-    :root { --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#8a8984; --grid:#e8e7e2;
-            --s1:#2a78d6; --critical:#d03b3b; --good:#0ca30c; }
+    :root { --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#8a8984; --grid:#e8e7e2; --s1:#2a78d6; --critical:#d03b3b; --good:#0ca30c; }
     body { background:#f4f5f2; color:var(--ink); font-family:"Microsoft JhengHei","PingFang TC",sans-serif; }
     .card-x { background:var(--surface); border-radius:16px; box-shadow:0 4px 14px rgba(0,0,0,.05); padding:18px; margin-bottom:16px; }
-    .kpi .v { font-size:2rem; font-weight:800; line-height:1.1; }
-    .kpi .l { color:var(--ink2); font-size:.9rem; }
-    h6.t { font-weight:800; margin-bottom:2px; }
-    .sub { color:var(--muted); font-size:.82rem; margin-bottom:10px; }
+    .kpi .v { font-size:1.9rem; font-weight:800; line-height:1.1; } .kpi .l { color:var(--ink2); font-size:.9rem; }
+    h6.t { font-weight:800; margin-bottom:2px; } .sub { color:var(--muted); font-size:.82rem; margin-bottom:10px; }
     .chart-box { position:relative; height:280px; }
-    .chart-box.tall { height:420px; }
-    .warn { color:var(--critical); font-weight:700; }
-    .filters { position:sticky; top:0; z-index:10; background:#f4f5f2; padding:10px 0; }
-    table.tbl { font-size:.9rem; } table.tbl th { white-space:nowrap; background:#f0f0ec; }
+    .warn { color:var(--critical) !important; font-weight:700; }
+    .filters { position:sticky; top:0; z-index:10; background:#f4f5f2; padding:8px 0; }
+    table.tbl { font-size:.9rem; } table.tbl th { white-space:nowrap; background:#f0f0ec; position:sticky; top:0; }
+    .scroll { max-height:520px; overflow:auto; }
     .hidden { display:none !important; }
+    .nav-pills .nav-link { color:var(--ink2); font-weight:700; } .nav-pills .nav-link.active { background:var(--s1); color:#fff; }
+    .stu-link { color:var(--s1); cursor:pointer; text-decoration:underline; }
+    .pill { display:inline-block; background:#eef3fb; border-radius:999px; padding:1px 8px; margin:1px; font-size:.82rem; }
+    .qr-card { border:1px dashed #999; border-radius:10px; padding:8px; text-align:center; break-inside:avoid; }
+    .qr-card img { width:120px; height:120px; } .qr-card .n { font-weight:800; }
+    @media print { .no-print { display:none !important; } body { background:#fff; } .card-x { box-shadow:none; } }
   </style>
 </head>
 <body>
 <div class="container-xl py-3">
-
   <div id="login" class="card-x mx-auto mt-5 text-center" style="max-width:380px">
     <h4 class="fw-bold mb-3">📊 數學英雄傳｜教師後台</h4>
     <input id="pw" type="password" class="form-control form-control-lg text-center mb-2" placeholder="請輸入後台密碼">
@@ -33,75 +35,126 @@
   </div>
 
   <div id="app" class="hidden">
-    <div class="d-flex flex-wrap justify-content-between align-items-end mb-1">
+    <div class="d-flex flex-wrap justify-content-between align-items-end mb-2 no-print">
       <h4 class="fw-bold mb-0">📊 數學英雄傳｜學習分析</h4>
       <div class="small text-secondary">資料更新：<span id="updated"></span>
         <button class="btn btn-sm btn-outline-secondary ms-2" onclick="load()">🔄 重新整理</button></div>
     </div>
-
-    <div class="filters">
+    <ul class="nav nav-pills mb-2 no-print" id="tabs">
+      <li class="nav-item"><a class="nav-link active" data-tab="t-over">總覽</a></li>
+      <li class="nav-item"><a class="nav-link" data-tab="t-mis">🧠 迷思概念</a></li>
+      <li class="nav-item"><a class="nav-link" data-tab="t-stu">👩‍🎓 學生</a></li>
+      <li class="nav-item"><a class="nav-link" data-tab="t-login">🕒 登入紀錄</a></li>
+      <li class="nav-item"><a class="nav-link" data-tab="t-qr">📱 登入 QR 卡</a></li>
+    </ul>
+    <div class="filters no-print">
       <div class="row g-2">
         <div class="col-6 col-md-3"><select id="f-grade" class="form-select"></select></div>
         <div class="col-6 col-md-3"><select id="f-class" class="form-select"></select></div>
         <div class="col-6 col-md-3"><select id="f-range" class="form-select">
-          <option value="all">全部期間</option><option value="7">最近 7 天</option>
+          <option value="all">全部期間</option><option value="1">今天</option><option value="7">最近 7 天</option>
           <option value="30">最近 30 天</option><option value="90">最近 90 天</option></select></div>
         <div class="col-6 col-md-3"><button class="btn btn-success w-100" onclick="exportCsv()">⬇️ 匯出學生成績 CSV</button></div>
       </div>
     </div>
 
-    <div class="row g-3 mb-1">
-      <div class="col-6 col-lg-3"><div class="card-x kpi"><div class="l">測驗次數</div><div class="v" id="k-n"></div></div></div>
-      <div class="col-6 col-lg-3"><div class="card-x kpi"><div class="l">參與學生</div><div class="v" id="k-s"></div></div></div>
-      <div class="col-6 col-lg-3"><div class="card-x kpi"><div class="l">平均分數</div><div class="v" id="k-avg"></div></div></div>
-      <div class="col-6 col-lg-3"><div class="card-x kpi"><div class="l">平均作答時間</div><div class="v" id="k-t"></div></div></div>
-    </div>
-
-    <div class="row g-3">
-      <div class="col-lg-6"><div class="card-x"><h6 class="t">各班平均分數</h6><div class="sub">每次測驗分數的平均</div><div class="chart-box"><canvas id="c-class"></canvas></div></div></div>
-      <div class="col-lg-6"><div class="card-x"><h6 class="t">分數分布</h6><div class="sub">各分數區間的測驗次數</div><div class="chart-box"><canvas id="c-dist"></canvas></div></div></div>
-      <div class="col-12"><div class="card-x"><h6 class="t">各單元平均分數</h6><div class="sub">由低到高排列；⚠️ 表示平均低於 60 分，建議補強</div><div class="chart-box tall" id="unit-box"><canvas id="c-unit"></canvas></div></div></div>
-      <div class="col-lg-4"><div class="card-x"><h6 class="t">題型答對率</h6><div class="sub">選擇、填充、應用各題型的答對比例</div><div class="chart-box"><canvas id="c-type"></canvas></div></div></div>
-      <div class="col-lg-4"><div class="card-x"><h6 class="t">每日測驗次數</h6><div class="sub">學生使用量的變化</div><div class="chart-box"><canvas id="c-daycount"></canvas></div></div></div>
-      <div class="col-lg-4"><div class="card-x"><h6 class="t">每日平均分數</h6><div class="sub">當天所有測驗的平均</div><div class="chart-box"><canvas id="c-dayavg"></canvas></div></div></div>
-    </div>
-
-    <div class="card-x">
-      <h6 class="t">❗ 最常答錯的題目（前 15 名）</h6><div class="sub">至少 3 人次作答才列入；可直接看出學生最常寫錯的答案</div>
-      <div class="table-responsive"><table class="table table-sm table-hover tbl mb-0"><thead><tr>
-        <th>年級</th><th>單元</th><th>題號</th><th>題型</th><th>題目</th><th>答錯率</th><th>作答人次</th><th>正確答案</th><th>最常見錯答</th></tr></thead>
-        <tbody id="t-hard"></tbody></table></div>
-    </div>
-
-    <div class="card-x">
-      <h6 class="t"><span class="warn">⚠️</span> 需要關注的學生</h6><div class="sub">平均分數低於 60 分，或最近一次測驗低於 60 分</div>
-      <div class="table-responsive"><table class="table table-sm table-hover tbl mb-0"><thead><tr>
-        <th>班級</th><th>座號</th><th>姓名</th><th>測驗次數</th><th>平均</th><th>最近一次</th><th>最弱單元</th></tr></thead>
-        <tbody id="t-focus"></tbody></table></div>
-    </div>
-
-    <div class="card-x">
-      <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
-        <h6 class="t mb-0">👩‍🎓 全部學生</h6>
-        <input id="q-stu" class="form-control form-control-sm" style="max-width:220px" placeholder="搜尋姓名" oninput="renderStudents()">
+    <!-- 總覽 -->
+    <div id="t-over" class="tab">
+      <div class="row g-3 mb-1">
+        <div class="col-6 col-lg"><div class="card-x kpi"><div class="l">登入次數</div><div class="v" id="k-login"></div></div></div>
+        <div class="col-6 col-lg"><div class="card-x kpi"><div class="l">測驗次數</div><div class="v" id="k-n"></div></div></div>
+        <div class="col-6 col-lg"><div class="card-x kpi"><div class="l">參與學生</div><div class="v" id="k-s"></div></div></div>
+        <div class="col-6 col-lg"><div class="card-x kpi"><div class="l">平均分數</div><div class="v" id="k-avg"></div></div></div>
+        <div class="col-12 col-lg"><div class="card-x kpi"><div class="l">平均作答時間</div><div class="v" id="k-t"></div></div></div>
       </div>
-      <div class="table-responsive"><table class="table table-sm table-hover tbl mb-0"><thead><tr>
-        <th>班級</th><th>座號</th><th>姓名</th><th>測驗次數</th><th>完成單元數</th><th>平均</th><th>最高</th><th>最近一次</th><th>最近測驗時間</th></tr></thead>
-        <tbody id="t-stu"></tbody></table></div>
+      <div class="row g-3">
+        <div class="col-lg-6"><div class="card-x"><h6 class="t">各班平均分數</h6><div class="sub">每次測驗分數的平均</div><div class="chart-box"><canvas id="c-class"></canvas></div></div></div>
+        <div class="col-lg-6"><div class="card-x"><h6 class="t">分數分布</h6><div class="sub">各分數區間的測驗次數</div><div class="chart-box"><canvas id="c-dist"></canvas></div></div></div>
+        <div class="col-12"><div class="card-x"><h6 class="t">各單元平均分數</h6><div class="sub">由低到高排列；⚠️ 表示平均低於 60 分，建議補強</div><div class="chart-box" id="unit-box"><canvas id="c-unit"></canvas></div></div></div>
+        <div class="col-lg-4"><div class="card-x"><h6 class="t">題型答對率</h6><div class="sub">選擇、填充、應用</div><div class="chart-box"><canvas id="c-type"></canvas></div></div></div>
+        <div class="col-lg-4"><div class="card-x"><h6 class="t">每日登入次數</h6><div class="sub">學生使用量的變化</div><div class="chart-box"><canvas id="c-daylogin"></canvas></div></div></div>
+        <div class="col-lg-4"><div class="card-x"><h6 class="t">每日平均分數</h6><div class="sub">當天所有測驗的平均</div><div class="chart-box"><canvas id="c-dayavg"></canvas></div></div></div>
+      </div>
+      <div class="card-x">
+        <h6 class="t">❗ 最常答錯的題目（前 15 名）</h6><div class="sub">至少 3 人次作答才列入</div>
+        <div class="table-responsive"><table class="table table-sm table-hover tbl mb-0"><thead><tr>
+          <th>年級</th><th>單元</th><th>題號</th><th>題目</th><th>答錯率</th><th>人次</th><th>正確答案</th><th>最常見錯答</th><th>主要迷思</th></tr></thead><tbody id="t-hard"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- 迷思概念 -->
+    <div id="t-mis" class="tab hidden">
+      <div class="row g-3">
+        <div class="col-lg-7"><div class="card-x"><h6 class="t">出現最多學生的迷思（前 12 名）</h6><div class="sub">以「出現過這個迷思的學生人數」排序；點表格中的迷思可看學生名單</div><div class="chart-box" style="height:400px"><canvas id="c-mis"></canvas></div></div></div>
+        <div class="col-lg-5"><div class="card-x"><h6 class="t">最需要加強的概念</h6><div class="sub">答對率最低的 12 個概念（至少 5 人次）</div>
+          <div class="scroll" style="max-height:400px"><table class="table table-sm tbl mb-0"><thead><tr><th>概念</th><th>答對率</th><th>人次</th></tr></thead><tbody id="t-concept"></tbody></table></div></div></div>
+      </div>
+      <div class="card-x">
+        <h6 class="t">🧠 迷思概念總表</h6><div class="sub">同一位學生重複犯同一個迷思只算 1 人；「未作答」不列入</div>
+        <div class="scroll"><table class="table table-sm table-hover tbl mb-0"><thead><tr>
+          <th>迷思概念</th><th>相關概念</th><th>出現在</th><th>次數</th><th>學生數</th><th>學生</th></tr></thead><tbody id="t-mis-all"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- 學生 -->
+    <div id="t-stu" class="tab hidden">
+      <div class="card-x">
+        <h6 class="t"><span class="warn">⚠️</span> 需要關注的學生</h6><div class="sub">平均低於 60 分，或最近一次低於 60 分</div>
+        <div class="table-responsive"><table class="table table-sm table-hover tbl mb-0"><thead><tr>
+          <th>班級</th><th>座號</th><th>姓名</th><th>測驗次數</th><th>平均</th><th>最近一次</th><th>最常出現的迷思</th></tr></thead><tbody id="t-focus"></tbody></table></div>
+      </div>
+      <div class="card-x">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+          <h6 class="t mb-0">全部學生（點姓名看個人紀錄）</h6>
+          <input id="q-stu" class="form-control form-control-sm" style="max-width:220px" placeholder="搜尋姓名" oninput="renderStudents()">
+        </div>
+        <div class="scroll"><table class="table table-sm table-hover tbl mb-0"><thead><tr>
+          <th>班級</th><th>座號</th><th>姓名</th><th>登入次數</th><th>最近登入</th><th>測驗次數</th><th>平均</th><th>最高</th><th>最近一次</th></tr></thead><tbody id="t-stu-all"></tbody></table></div>
+      </div>
+      <div class="card-x hidden" id="stu-detail"></div>
+    </div>
+
+    <!-- 登入紀錄 -->
+    <div id="t-login" class="tab hidden">
+      <div class="card-x">
+        <h6 class="t">🕒 登入紀錄</h6><div class="sub">每一次登入的日期與時間（最新在上）；右欄是該次登入後的測驗成績</div>
+        <div class="scroll"><table class="table table-sm table-hover tbl mb-0"><thead><tr>
+          <th>登入時間</th><th>班級</th><th>座號</th><th>姓名</th><th>這次登入完成的測驗（時間｜單元｜分數）</th></tr></thead><tbody id="t-logins"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- QR 卡 -->
+    <div id="t-qr" class="tab hidden">
+      <div class="card-x">
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-2 no-print">
+          <h6 class="t mb-0 me-auto">📱 學生專屬登入 QR 卡</h6>
+          <select id="qr-class" class="form-select form-select-sm" style="width:auto" onchange="renderQR()"></select>
+          <button class="btn btn-sm btn-dark" onclick="window.print()">🖨️ 列印</button>
+        </div>
+        <div class="sub no-print">學生用平板掃自己的 QR，就會自動選好班級和座號。名單來自試算表「學生名單」分頁。</div>
+        <div id="qr-grid" class="row g-2"></div>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-  let RAW = null, charts = {}, PW = '';
+  let RAW = null, charts = {}, PW = '', V = {};
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
   const r1 = x => Math.round(x * 10) / 10;
   const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const group = (rows, f) => { const o = {}; rows.forEach(r => (o[f(r)] = o[f(r)] || []).push(r)); return o; };
+  const sidOf = (cls, seat, name) => cls + '|' + seat + '|' + name;
 
   try { PW = sessionStorage.getItem('mh_pw') || ''; } catch (e) {}
   if (PW) load();
   document.getElementById('pw').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+  document.querySelectorAll('#tabs .nav-link').forEach(a => a.onclick = () => {
+    document.querySelectorAll('#tabs .nav-link').forEach(x => x.classList.toggle('active', x === a));
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('hidden', t.id !== a.dataset.tab));
+    Object.values(charts).forEach(c => c.resize());
+  });
 
   function login() { PW = document.getElementById('pw').value; load(); }
   function load() {
@@ -121,134 +174,191 @@
     }).getDashboard(PW);
   }
 
-  // logs: [time,name,class,seat,unit,score,grade,secs]
-  // details: [time,name,class,seat,grade,unit,no,type,user,correct,ok]
+  // logs: [time,name,class,seat,unit,score,grade,secs,duration]
+  // details: [time,name,class,seat,grade,unit,no,type,user,correct,ok,concept,mis]
+  // logins: [time,class,seat,name]
   function buildFilters() {
     const grades = ['1上','1下','2上','2下','3上','3下','4上','4下','5上','5下','6上','6下'];
-    const classes = [...new Set(RAW.logs.map(r => r[2]).filter(Boolean))].sort();
-    const g = document.getElementById('f-grade'), c = document.getElementById('f-class');
-    const gv = g.value, cv = c.value;
+    const classes = [...new Set(RAW.logs.map(r => r[2]).concat(RAW.logins.map(r => r[1]), Object.keys(RAW.roster)).filter(Boolean))].sort();
+    const g = document.getElementById('f-grade'), c = document.getElementById('f-class'), q = document.getElementById('qr-class');
+    const gv = g.value, cv = c.value, qv = q.value;
     g.innerHTML = '<option value="">全部年級</option>' + grades.map(x => `<option>${x}</option>`).join('');
     c.innerHTML = '<option value="">全部班級</option>' + classes.map(x => `<option>${esc(x)}</option>`).join('');
-    g.value = gv; c.value = cv;
+    const rc = Object.keys(RAW.roster).sort();
+    q.innerHTML = rc.length ? rc.map(x => `<option>${esc(x)}</option>`).join('') : '<option value="">（學生名單是空的）</option>';
+    g.value = gv; c.value = cv; if (qv) q.value = qv;
     [g, c, document.getElementById('f-range')].forEach(el => el.onchange = render);
   }
-
+  function since() { const rg = document.getElementById('f-range').value; if (rg === 'all') return '';
+    const d = new Date(Date.now() - (rg - 1) * 864e5); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function filt(rows, ti, ci, gi) {
-    const g = document.getElementById('f-grade').value, c = document.getElementById('f-class').value;
-    const rg = document.getElementById('f-range').value;
-    const since = rg === 'all' ? '' : new Date(Date.now() - rg * 864e5).toISOString().slice(0, 10);
-    return rows.filter(r => (!g || r[gi] === g) && (!c || r[ci] === c) && (!since || r[ti].slice(0, 10) >= since));
+    const g = document.getElementById('f-grade').value, c = document.getElementById('f-class').value, s = since();
+    return rows.filter(r => (gi == null || !g || r[gi] === g) && (!c || r[ci] === c) && (!s || r[ti].slice(0, 10) >= s));
   }
 
   function render() {
-    const logs = filt(RAW.logs, 0, 2, 6), det = filt(RAW.details, 0, 2, 4);
-    const sid = r => r[2] + '|' + r[3] + '|' + r[1];
+    const logs = filt(RAW.logs, 0, 2, 6), det = filt(RAW.details, 0, 2, 4), logins = filt(RAW.logins, 0, 1, null);
+    V = { logs, det, logins };
+    document.getElementById('k-login').innerText = logins.length;
     document.getElementById('k-n').innerText = logs.length;
-    document.getElementById('k-s').innerText = new Set(logs.map(sid)).size;
+    document.getElementById('k-s').innerText = new Set(logs.map(r => sidOf(r[2], r[3], r[1])).concat(logins.map(r => sidOf(r[1], r[2], r[3])))).size;
     document.getElementById('k-avg').innerText = logs.length ? r1(avg(logs.map(r => r[5]))) : '—';
     const secs = logs.map(r => r[7]).filter(x => x > 0);
     document.getElementById('k-t').innerText = secs.length ? Math.floor(avg(secs) / 60) + '分' + Math.round(avg(secs) % 60) + '秒' : '—';
 
-    // 各班
-    const byClass = group(logs, r => r[2] || '未填');
-    const cl = Object.keys(byClass).sort();
+    const byClass = group(logs, r => r[2] || '未填'), cl = Object.keys(byClass).sort();
     bar('c-class', cl, cl.map(k => r1(avg(byClass[k].map(r => r[5])))), { max: 100, suffix: ' 分', counts: cl.map(k => byClass[k].length) });
-
-    // 分數分布
-    const bins = ['0–59', '60–69', '70–79', '80–89', '90–100'];
-    const bc = [0, 0, 0, 0, 0];
+    const bins = ['0–59', '60–69', '70–79', '80–89', '90–100'], bc = [0, 0, 0, 0, 0];
     logs.forEach(r => bc[r[5] < 60 ? 0 : r[5] >= 90 ? 4 : Math.floor(r[5] / 10) - 5]++);
     bar('c-dist', bins, bc, { suffix: ' 次', integer: true });
-
-    // 各單元
     const byUnit = group(logs, r => (r[6] ? r[6] + ' ' : '') + r[4]);
     const ul = Object.keys(byUnit).map(k => ({ k, v: r1(avg(byUnit[k].map(r => r[5]))), n: byUnit[k].length })).sort((a, b) => a.v - b.v).slice(0, 40);
     document.getElementById('unit-box').style.height = Math.max(240, ul.length * 26 + 60) + 'px';
     bar('c-unit', ul.map(x => (x.v < 60 ? '⚠️ ' : '') + x.k), ul.map(x => x.v), { max: 100, suffix: ' 分', horizontal: true, counts: ul.map(x => x.n) });
-
-    // 題型
-    const types = ['選擇', '填充', '應用'];
-    const byType = group(det, r => r[7]);
+    const types = ['選擇', '填充', '應用'], byType = group(det, r => r[7]);
     bar('c-type', types, types.map(t => byType[t] ? r1(avg(byType[t].map(r => r[10])) * 100) : 0), { max: 100, suffix: '%', counts: types.map(t => (byType[t] || []).length) });
-
-    // 每日
-    const byDay = group(logs, r => r[0].slice(0, 10));
-    const days = Object.keys(byDay).sort();
-    line('c-daycount', days, days.map(d => byDay[d].length), ' 次');
+    const byDayL = group(logins, r => r[0].slice(0, 10)), dl = Object.keys(byDayL).sort();
+    line('c-daylogin', dl, dl.map(d => byDayL[d].length), ' 次');
+    const byDay = group(logs, r => r[0].slice(0, 10)), days = Object.keys(byDay).sort();
     line('c-dayavg', days, days.map(d => r1(avg(byDay[d].map(r => r[5])))), ' 分', 100);
 
-    // 最常錯題目
+    // 最常錯
     const byQ = group(det, r => r[4] + '|' + r[5] + '|' + r[6]);
     const hard = Object.keys(byQ).map(k => {
       const rows = byQ[k], wrong = rows.filter(r => !r[10]);
       const wc = group(wrong.filter(r => String(r[8]).trim()), r => String(r[8]).trim());
       const top = Object.keys(wc).sort((a, b) => wc[b].length - wc[a].length)[0];
+      const mc = group(wrong.filter(r => r[12] && r[12] !== '未作答'), r => r[12]);
+      const topM = Object.keys(mc).sort((a, b) => mc[b].length - mc[a].length)[0];
       const [g, u, no] = k.split('|');
-      return { g, u, no, type: rows[0][7], n: rows.length, rate: wrong.length / rows.length, correct: rows[0][9], top: top ? `${top}（${wc[top].length} 人）` : '多為空白', text: RAW.qText[k] || '' };
+      return { g, u, no, n: rows.length, rate: wrong.length / rows.length, correct: rows[0][9], top: top ? `${top}（${wc[top].length}）` : '多為空白', topM: topM || '', text: RAW.qText[k] || '' };
     }).filter(x => x.n >= 3 && x.rate > 0).sort((a, b) => b.rate - a.rate || b.n - a.n).slice(0, 15);
-    document.getElementById('t-hard').innerHTML = hard.length ? hard.map(x => `<tr><td>${esc(x.g)}</td><td>${esc(x.u)}</td><td>${x.no}</td><td>${esc(x.type)}</td>
-      <td style="max-width:320px">${esc(x.text)}</td><td class="${x.rate >= .5 ? 'warn' : ''}">${x.rate >= .5 ? '⚠️ ' : ''}${Math.round(x.rate * 100)}%</td><td>${x.n}</td><td>${esc(x.correct)}</td><td>${esc(x.top)}</td></tr>`).join('')
-      : '<tr><td colspan="9" class="text-secondary">目前資料不足（新版開始記錄每題作答後才會出現）</td></tr>';
+    document.getElementById('t-hard').innerHTML = hard.length ? hard.map(x => `<tr><td>${esc(x.g)}</td><td>${esc(x.u)}</td><td>${x.no}</td>
+      <td style="max-width:300px">${esc(x.text)}</td><td class="${x.rate >= .5 ? 'warn' : ''}">${x.rate >= .5 ? '⚠️ ' : ''}${Math.round(x.rate * 100)}%</td><td>${x.n}</td><td>${esc(x.correct)}</td><td>${esc(x.top)}</td><td>${esc(x.topM)}</td></tr>`).join('')
+      : '<tr><td colspan="9" class="text-secondary">資料不足</td></tr>';
 
-    // 學生
-    window._stu = Object.values(group(logs, sid)).map(rows => {
-      rows.sort((a, b) => a[0] < b[0] ? -1 : 1);
-      const last = rows[rows.length - 1];
-      const bu = group(rows, r => (r[6] ? r[6] + ' ' : '') + r[4]);
-      const weak = Object.keys(bu).map(k => ({ k, v: avg(bu[k].map(r => r[5])) })).sort((a, b) => a.v - b.v)[0];
-      return { cls: last[2], seat: last[3], name: last[1], n: rows.length, units: Object.keys(bu).length,
-               avg: r1(avg(rows.map(r => r[5]))), max: Math.max(...rows.map(r => r[5])), last: last[5], lastT: last[0], weak: weak ? `${weak.k}（${r1(weak.v)}）` : '' };
+    renderMis(); renderStuData(); renderLogins(); renderQR();
+  }
+
+  // ───── 迷思 ─────
+  function renderMis() {
+    const wrong = V.det.filter(r => !r[10] && r[12] && r[12] !== '未作答');
+    const byM = group(wrong, r => r[12]);
+    const list = Object.keys(byM).map(m => {
+      const rows = byM[m], studs = group(rows, r => sidOf(r[2], r[3], r[1]));
+      const where = [...new Set(rows.map(r => r[4] + ' ' + r[5].replace(/^第(\d+)單元 /, 'U$1 ')))];
+      return { m, n: rows.length, s: Object.keys(studs).length, concept: [...new Set(rows.map(r => r[11]).filter(Boolean))].slice(0, 3).join('、'),
+               where: where.slice(0, 3).join('；') + (where.length > 3 ? ` 等 ${where.length} 處` : ''),
+               studs: Object.keys(studs).map(k => { const [c, s, n] = k.split('|'); return `${c}${s}號${n}（${studs[k].length}）`; }) };
+    }).sort((a, b) => b.s - a.s || b.n - a.n);
+    const top = list.slice(0, 12);
+    bar('c-mis', top.map(x => x.m.length > 16 ? x.m.slice(0, 16) + '…' : x.m), top.map(x => x.s), { horizontal: true, suffix: ' 位學生', integer: true, counts: top.map(x => x.n), countLabel: '次' });
+    document.getElementById('t-mis-all').innerHTML = list.length ? list.map((x, i) => `<tr><td><b>${esc(x.m)}</b></td><td>${esc(x.concept)}</td><td>${esc(x.where)}</td><td>${x.n}</td><td>${x.s}</td>
+      <td><span class="stu-link" onclick="this.nextElementSibling.classList.toggle('hidden')">展開 ${x.s} 人</span><div class="hidden">${x.studs.map(s => `<span class="pill">${esc(s)}</span>`).join('')}</div></td></tr>`).join('')
+      : '<tr><td colspan="6" class="text-secondary">目前沒有迷思資料（新版開始作答後才會出現）</td></tr>';
+    const byC = group(V.det.filter(r => r[11]), r => r[11]);
+    const cl = Object.keys(byC).map(c => ({ c, n: byC[c].length, rate: avg(byC[c].map(r => r[10])) })).filter(x => x.n >= 5).sort((a, b) => a.rate - b.rate).slice(0, 12);
+    document.getElementById('t-concept').innerHTML = cl.length ? cl.map(x => `<tr><td>${esc(x.c)}</td><td class="${x.rate < .6 ? 'warn' : ''}">${x.rate < .6 ? '⚠️ ' : ''}${Math.round(x.rate * 100)}%</td><td>${x.n}</td></tr>`).join('')
+      : '<tr><td colspan="3" class="text-secondary">資料不足</td></tr>';
+  }
+
+  // ───── 學生 ─────
+  function renderStuData() {
+    const map = {};
+    const get = (c, s, n) => map[sidOf(c, s, n)] = map[sidOf(c, s, n)] || { cls: c, seat: s, name: n, tests: [], logins: [], mis: {} };
+    V.logs.forEach(r => get(r[2], r[3], r[1]).tests.push(r));
+    V.logins.forEach(r => get(r[1], r[2], r[3]).logins.push(r));
+    V.det.forEach(r => { if (!r[10] && r[12] && r[12] !== '未作答') { const o = get(r[2], r[3], r[1]).mis; o[r[12]] = (o[r[12]] || 0) + 1; } });
+    window._stu = Object.values(map).map(s => {
+      s.tests.sort((a, b) => a[0] < b[0] ? -1 : 1); s.logins.sort((a, b) => a[0] < b[0] ? -1 : 1);
+      const sc = s.tests.map(r => r[5]), last = s.tests[s.tests.length - 1];
+      const topMis = Object.keys(s.mis).sort((a, b) => s.mis[b] - s.mis[a]);
+      return Object.assign(s, { n: s.tests.length, avg: sc.length ? r1(avg(sc)) : null, max: sc.length ? Math.max(...sc) : null, last: last ? last[5] : null,
+        lastLogin: s.logins.length ? s.logins[s.logins.length - 1][0] : '', topMis });
     }).sort((a, b) => a.cls.localeCompare(b.cls) || (+a.seat - +b.seat));
-    const focus = window._stu.filter(s => s.avg < 60 || s.last < 60).sort((a, b) => a.avg - b.avg);
-    document.getElementById('t-focus').innerHTML = focus.length ? focus.map(s => `<tr><td>${esc(s.cls)}</td><td>${esc(s.seat)}</td><td>${esc(s.name)}</td><td>${s.n}</td>
-      <td class="${s.avg < 60 ? 'warn' : ''}">${s.avg}</td><td class="${s.last < 60 ? 'warn' : ''}">${s.last}</td><td>${esc(s.weak)}</td></tr>`).join('')
+    const focus = window._stu.filter(s => s.n && (s.avg < 60 || s.last < 60)).sort((a, b) => a.avg - b.avg);
+    document.getElementById('t-focus').innerHTML = focus.length ? focus.map(s => `<tr><td>${esc(s.cls)}</td><td>${esc(s.seat)}</td><td><span class="stu-link" onclick="showStu('${esc(sidOf(s.cls, s.seat, s.name))}')">${esc(s.name)}</span></td><td>${s.n}</td>
+      <td class="${s.avg < 60 ? 'warn' : ''}">${s.avg}</td><td class="${s.last < 60 ? 'warn' : ''}">${s.last}</td><td>${s.topMis.slice(0, 2).map(m => `<span class="pill">${esc(m)}</span>`).join('')}</td></tr>`).join('')
       : '<tr><td colspan="7" class="text-secondary">目前沒有需要特別關注的學生 👍</td></tr>';
     renderStudents();
   }
-
   function renderStudents() {
     const q = document.getElementById('q-stu').value.trim();
     const list = (window._stu || []).filter(s => !q || s.name.includes(q));
-    document.getElementById('t-stu').innerHTML = list.map(s => `<tr><td>${esc(s.cls)}</td><td>${esc(s.seat)}</td><td>${esc(s.name)}</td><td>${s.n}</td><td>${s.units}</td>
-      <td class="${s.avg < 60 ? 'warn' : ''}">${s.avg}</td><td>${s.max}</td><td>${s.last}</td><td>${esc(s.lastT)}</td></tr>`).join('') || '<tr><td colspan="9" class="text-secondary">沒有資料</td></tr>';
+    document.getElementById('t-stu-all').innerHTML = list.map(s => `<tr><td>${esc(s.cls)}</td><td>${esc(s.seat)}</td>
+      <td><span class="stu-link" onclick="showStu('${esc(sidOf(s.cls, s.seat, s.name))}')">${esc(s.name)}</span></td><td>${s.logins.length}</td><td>${esc(s.lastLogin)}</td><td>${s.n}</td>
+      <td class="${s.avg != null && s.avg < 60 ? 'warn' : ''}">${s.avg ?? '—'}</td><td>${s.max ?? '—'}</td><td>${s.last ?? '—'}</td></tr>`).join('') || '<tr><td colspan="9" class="text-secondary">沒有資料</td></tr>';
+  }
+  function showStu(id) {
+    const s = (window._stu || []).find(x => sidOf(x.cls, x.seat, x.name) === id); if (!s) return;
+    const box = document.getElementById('stu-detail');
+    box.classList.remove('hidden');
+    box.innerHTML = `<div class="d-flex justify-content-between"><h5 class="fw-bold">${esc(s.cls)} ${esc(s.seat)} 號 ${esc(s.name)}</h5>
+        <button class="btn btn-sm btn-outline-secondary" onclick="this.closest('.card-x').classList.add('hidden')">關閉</button></div>
+      <div class="row g-3">
+        <div class="col-lg-5"><h6 class="t">測驗紀錄（${s.tests.length} 次）</h6><div class="scroll" style="max-height:320px"><table class="table table-sm tbl"><thead><tr><th>日期時間</th><th>單元</th><th>分數</th><th>用時</th></tr></thead><tbody>
+          ${s.tests.slice().reverse().map(r => `<tr><td>${esc(r[0])}</td><td>${esc((r[6] ? r[6] + ' ' : '') + r[4])}</td><td class="${r[5] < 60 ? 'warn' : ''}">${r[5]}</td><td>${esc(r[8])}</td></tr>`).join('') || '<tr><td colspan="4">尚無</td></tr>'}</tbody></table></div></div>
+        <div class="col-lg-3"><h6 class="t">登入時間（${s.logins.length} 次）</h6><div class="scroll" style="max-height:320px"><table class="table table-sm tbl"><tbody>
+          ${s.logins.slice().reverse().map(r => `<tr><td>${esc(r[0])}</td></tr>`).join('') || '<tr><td>尚無</td></tr>'}</tbody></table></div></div>
+        <div class="col-lg-4"><h6 class="t">迷思概念（次數多的在上）</h6><div class="scroll" style="max-height:320px">
+          ${s.topMis.map(m => `<div class="d-flex justify-content-between border-bottom py-1"><span>🧠 ${esc(m)}</span><b>${s.mis[m]}</b></div>`).join('') || '<div class="text-secondary">沒有出現迷思 👍</div>'}</div></div>
+      </div>`;
+    box.scrollIntoView({ behavior: 'smooth' });
   }
 
-  function group(rows, f) { const o = {}; rows.forEach(r => (o[f(r)] = o[f(r)] || []).push(r)); return o; }
+  // ───── 登入紀錄 ─────
+  function renderLogins() {
+    const L = V.logins.slice().sort((a, b) => a[0] < b[0] ? 1 : -1);
+    const testsBy = group(V.logs, r => sidOf(r[2], r[3], r[1]));
+    const loginsBy = group(V.logins, r => sidOf(r[1], r[2], r[3]));
+    Object.values(loginsBy).forEach(a => a.sort((x, y) => x[0] < y[0] ? -1 : 1));
+    document.getElementById('t-logins').innerHTML = L.slice(0, 500).map(r => {
+      const id = sidOf(r[1], r[2], r[3]), mine = loginsBy[id], i = mine.indexOf(r), next = mine[i + 1] ? mine[i + 1][0] : '9999';
+      const tests = (testsBy[id] || []).filter(t => t[0] >= r[0] && t[0] < next);
+      return `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td><span class="stu-link" onclick="openStu('${esc(id)}')">${esc(r[3])}</span></td>
+        <td>${tests.map(t => `<span class="pill">${esc(t[0].slice(11))}｜${esc(t[4].replace(/^第\d+單元 /, ''))}｜<b class="${t[5] < 60 ? 'warn' : ''}">${t[5]}</b></span>`).join('') || '<span class="text-secondary">（未完成測驗）</span>'}</td></tr>`;
+    }).join('') || '<tr><td colspan="5" class="text-secondary">尚無登入紀錄</td></tr>';
+  }
+  function openStu(id) { document.querySelector('[data-tab="t-stu"]').click(); showStu(id); }
 
+  // ───── QR 卡 ─────
+  function renderQR() {
+    const c = document.getElementById('qr-class').value, names = RAW.roster[c] || {};
+    const seats = Object.keys(names).map(Number).sort((a, b) => a - b);
+    document.getElementById('qr-grid').innerHTML = seats.length ? seats.map(s => {
+      const url = RAW.appUrl + '?c=' + encodeURIComponent(c) + '&s=' + s;
+      return `<div class="col-4 col-md-3 col-lg-2"><div class="qr-card"><img loading="lazy" alt="QR" src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(url)}">
+        <div class="n">${esc(c)} ${s} 號</div><div>${esc(names[s])}</div></div></div>`;
+    }).join('') : '<div class="text-secondary">請先在試算表「學生名單」分頁填入班級、座號、姓名。</div>';
+  }
+
+  // ───── 圖表 ─────
   function baseOpts(o) {
-    const grid = css('--grid'), ink = css('--ink2');
-    const val = o.horizontal ? 'x' : 'y', cat = o.horizontal ? 'y' : 'x';
-    const scales = {};
+    const grid = css('--grid'), ink = css('--ink2'), val = o.horizontal ? 'x' : 'y', cat = o.horizontal ? 'y' : 'x', scales = {};
     scales[val] = { beginAtZero: true, max: o.max, grid: { color: grid }, ticks: { color: ink, precision: o.integer ? 0 : undefined } };
     scales[cat] = { grid: { display: false }, ticks: { color: ink, autoSkip: !o.horizontal } };
     return { responsive: true, maintainAspectRatio: false, indexAxis: o.horizontal ? 'y' : 'x', animation: false,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + c.formattedValue + (o.suffix || '') + (o.counts ? `（${o.counts[c.dataIndex]} 筆）` : '') } } },
-      scales };
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + c.formattedValue + (o.suffix || '') + (o.counts ? `（${o.counts[c.dataIndex]} ${o.countLabel || '筆'}）` : '') } } }, scales };
   }
   function bar(id, labels, data, o) {
     charts[id] && charts[id].destroy();
     charts[id] = new Chart(document.getElementById(id), { type: 'bar',
-      data: { labels, datasets: [{ data, backgroundColor: css('--s1'), borderRadius: 4, borderSkipped: 'start', maxBarThickness: 34 }] },
-      options: baseOpts(o) });
+      data: { labels, datasets: [{ data, backgroundColor: css('--s1'), borderRadius: 4, borderSkipped: 'start', maxBarThickness: 34 }] }, options: baseOpts(o) });
   }
   function line(id, labels, data, suffix, max) {
     charts[id] && charts[id].destroy();
-    const o = baseOpts({ suffix, max, integer: !max });
-    o.interaction = { mode: 'index', intersect: false };
+    const o = baseOpts({ suffix, max, integer: !max }); o.interaction = { mode: 'index', intersect: false };
     charts[id] = new Chart(document.getElementById(id), { type: 'line',
-      data: { labels, datasets: [{ data, borderColor: css('--s1'), backgroundColor: css('--s1'), borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, tension: .2 }] },
-      options: o });
+      data: { labels, datasets: [{ data, borderColor: css('--s1'), backgroundColor: css('--s1'), borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, tension: .2 }] }, options: o });
   }
 
   function exportCsv() {
-    const head = ['班級', '座號', '姓名', '測驗次數', '完成單元數', '平均', '最高', '最近一次', '最近測驗時間', '最弱單元'];
-    const rows = (window._stu || []).map(s => [s.cls, s.seat, s.name, s.n, s.units, s.avg, s.max, s.last, s.lastT, s.weak]);
+    const head = ['班級', '座號', '姓名', '登入次數', '最近登入', '測驗次數', '平均', '最高', '最近一次', '主要迷思'];
+    const rows = (window._stu || []).map(s => [s.cls, s.seat, s.name, s.logins.length, s.lastLogin, s.n, s.avg ?? '', s.max ?? '', s.last ?? '', s.topMis.slice(0, 3).join('、')]);
     const csv = '﻿' + [head].concat(rows).map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = '數學英雄傳_學生成績_' + new Date().toISOString().slice(0, 10) + '.csv';
-    a.click();
+    a.download = '數學英雄傳_學生成績_' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
   }
 </script>
 </body>

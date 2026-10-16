@@ -24,6 +24,7 @@
   .q ol { margin:4px 0 0; padding-left:0; list-style:none; display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:4px 12px; }
   .ans { margin-top:8px; padding:8px 10px; background:#f7f9f8; border-radius:8px; font-size:.95rem; color:var(--ink2); }
   .ans b { color:var(--pri-d); }
+  .ans .mis { margin-top:6px; font-size:.88rem; color:#4a5450; }
   .hide-ans .ans { display:none; }
   .tools { margin-left:auto; display:flex; gap:8px; }
   .btn { border:0; background:var(--ink); color:#fff; border-radius:8px; padding:8px 12px; cursor:pointer; font-size:.9rem; }
@@ -67,7 +68,8 @@
       const opts = q.t === '選擇' ? `<ol>${q.o.map((o, k) => `<li>(${L[k]}) ${esc(o)}</li>`).join('')}</ol>` : '';
       const ans = q.t === '選擇' ? `(${L[q.o.indexOf(q.ans)]}) ${esc(q.ans)}` : esc(q.ans);
       return `<div class="q"><span class="tag">${i + 1}</span><span class="tag">${q.t}</span><div class="txt">${esc(q.q)}</div>${opts}
-        <div class="ans">答案：<b>${ans}</b>　｜　${esc(q.exp)}</div></div>`;
+        <div class="ans">答案：<b>${ans}</b>　｜　${esc(q.exp)}
+          ${q.k ? `<div class="mis">📌 概念：${esc(q.k)}<br>🧠 迷思：${esc(q.m).split(';').map(x => { const i = x.indexOf('='); const k = x.slice(0, i); return (k === '*' ? '其他錯答' : (q.t === '選擇' ? '選 ' : '寫 ') + k.replace(/,/g, '、')) + ' → ' + x.slice(i + 1); }).join('；')}</div>` : ''}</div></div>`;
     }).join('');
   }
 </script>
