@@ -9,7 +9,7 @@
 
 | 檔案 | 用途 |
 |---|---|
-| `index.html` | 線上瀏覽與列印題庫：https://cyysongyy.github.io/young-app-library/math-bank/ |
+| `index.html` | 線上瀏覽與列印題庫：https://cyysongyy.github.io/Young-App-Library/math-bank/ |
 | `questions.json` | 給 Apps Script 匯入用，格式和試算表欄位相同 |
 | `南一數學題庫_115.xlsx` | 12 個分頁（1上～6下），可直接複製貼到試算表 |
 | `data/g1～g6.json` | 題目原稿，要修改題目請改這裡 |
