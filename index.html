@@ -661,21 +661,24 @@ function render(){
   const q=_sv.value.toLowerCase().trim();
   const searched=vis.filter(a=>_matchesSearch(a,q));
 
-  // Sidebar
+  // Sidebar lists every category in the library; the counts follow the search, so a
+  // category with no matches stays in the list (dimmed, 0) instead of disappearing.
+  const allTags=new Set();vis.forEach(a=>(a.tags||[]).forEach(t=>allTags.add(t)));
   const counts={};searched.forEach(a=>(a.tags||[]).forEach(t=>counts[t]=(counts[t]||0)+1));
+  const tagRows=[...allTags].map(t=>[t,counts[t]||0]).sort((a,b)=>b[1]-a[1]);
   let th=`<div class="ti ${activeTag==='all'?'on':''}" onclick="setTag('all')"><span>🗂 全部</span><span class="tc">${searched.length}</span></div>`;
-  Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t,c])=>{
-    th+=`<div class="ti ${activeTag===t?'on':''}" onclick="setTag('${esc(t)}')"><span>${esc(t)}</span><span class="tc">${c}</span></div>`;
+  tagRows.forEach(([t,c])=>{
+    th+=`<div class="ti ${activeTag===t?'on':''}" style="${c?'':'opacity:.45'}" onclick="setTag('${esc(t)}')"><span>${esc(t)}</span><span class="tc">${c}</span></div>`;
   });
-  if(!counts['其他'])th+=`<div class="ti ${activeTag==='其他'?'on':''}"\ onclick="setTag('其他')"><span>🗂 其他</span><span class="tc">${counts['其他']||0}</span></div>`;
+  if(!allTags.has('其他'))th+=`<div class="ti ${activeTag==='其他'?'on':''}"\ onclick="setTag('其他')"><span>🗂 其他</span><span class="tc">0</span></div>`;
   document.getElementById('tlist').innerHTML=th;
 
   // Mobile tag bar
   const _tb=document.getElementById('tagbar');
   if(_tb){
     let tb=`<button class="tbc ${activeTag==='all'?'on':''}" onclick="setTag('all')">🗂 全部 (${searched.length})</button>`;
-    Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t,c])=>{
-      tb+=`<button class="tbc ${activeTag===t?'on':''}" onclick="setTag('${esc(t)}')">${esc(t)} (${c})</button>`;
+    tagRows.forEach(([t,c])=>{
+      tb+=`<button class="tbc ${activeTag===t?'on':''}" style="${c?'':'opacity:.45'}" onclick="setTag('${esc(t)}')">${esc(t)} (${c})</button>`;
     });
     _tb.innerHTML=tb;
   }
@@ -724,7 +727,12 @@ function render(){
 }
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
-function setTag(t){activeTag=t;render()}
+function setTag(t){
+  // Picking a category starts a fresh browse: clear the search so the category shows all of its Apps.
+  const _sv=document.getElementById('search');
+  if(_sv.value){_sv.value='';document.getElementById('sc').style.display='none';}
+  activeTag=t;render();
+}
 function onSearch(){document.getElementById('sc').style.display=document.getElementById('search').value?'':'none';render()}
 function clearSearch(){document.getElementById('search').value='';document.getElementById('sc').style.display='none';render()}
 function resetFilters(){document.getElementById('search').value='';document.getElementById('sc').style.display='none';activeTag='all';render()}
