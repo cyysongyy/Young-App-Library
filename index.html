@@ -458,7 +458,13 @@ function _mergeCats(cloudCats){
 }
 async function pushCatsToCloud(){
   if(!fbDb||!fbReady)return;
-  try{await fbDb.collection('yal').doc(_FBDOC).set({cats:customCats},{merge:true});}
+  try{
+    // Read the cloud copy first. Writing only this device's list wiped categories
+    // other devices had added — e.g. a fresh browser with no custom categories.
+    const snap=await fbDb.collection('yal').doc(_FBDOC).get();
+    if(snap.exists)_mergeCats((snap.data()||{}).cats);
+    if(customCats.length)await fbDb.collection('yal').doc(_FBDOC).set({cats:customCats},{merge:true});
+  }
   catch(e){console.warn('cats push error:',e);}
 }
 
@@ -596,6 +602,7 @@ function enter(){
         const _d=snap.data()||{};
         _mergeCats(_d.cats);
         const list=_d.list||[];
+        _saveBase(list);
         const cloudTs=_d.updated||0;
         if(list.length&&cloudTs>_localUpdated()){_adoptCloud(list,cloudTs);render();}
       }
@@ -632,6 +639,14 @@ function applyRole(){
 }
 
 /* ── Render ── */
+function _matchesSearch(a,q){
+  return !q||(a.name||'').toLowerCase().includes(q)||(a.desc||'').toLowerCase().includes(q)||(a.url||'').toLowerCase().includes(q)||(a.tags||[]).some(t=>String(t).toLowerCase().includes(q));
+}
+// Would this App be shown under the current category and search?
+function _isShown(a){
+  const q=document.getElementById('search').value.toLowerCase().trim();
+  return (activeTag==='all'||(a.tags||[]).includes(activeTag))&&_matchesSearch(a,q);
+}
 function render(){
   // Read apps ONCE — prevents sidebar/grid inconsistency
   const apps=getApps();
@@ -640,9 +655,15 @@ function render(){
   // Reset stale activeTag
   if(activeTag!=='all'&&!vis.some(a=>(a.tags||[]).includes(activeTag)))activeTag='all';
 
+  // Search narrows the sidebar counts too. Before, the sidebar still said
+  // "SEL教育 18" while the grid under it showed nothing for the same query.
+  const _sv=document.getElementById('search');if(_sv.value.startsWith('http')){_sv.value='';document.getElementById('sc').style.display='none';}
+  const q=_sv.value.toLowerCase().trim();
+  const searched=vis.filter(a=>_matchesSearch(a,q));
+
   // Sidebar
-  const counts={};vis.forEach(a=>(a.tags||[]).forEach(t=>counts[t]=(counts[t]||0)+1));
-  let th=`<div class="ti ${activeTag==='all'?'on':''}" onclick="setTag('all')"><span>🗂 全部</span><span class="tc">${vis.length}</span></div>`;
+  const counts={};searched.forEach(a=>(a.tags||[]).forEach(t=>counts[t]=(counts[t]||0)+1));
+  let th=`<div class="ti ${activeTag==='all'?'on':''}" onclick="setTag('all')"><span>🗂 全部</span><span class="tc">${searched.length}</span></div>`;
   Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t,c])=>{
     th+=`<div class="ti ${activeTag===t?'on':''}" onclick="setTag('${esc(t)}')"><span>${esc(t)}</span><span class="tc">${c}</span></div>`;
   });
@@ -652,22 +673,16 @@ function render(){
   // Mobile tag bar
   const _tb=document.getElementById('tagbar');
   if(_tb){
-    let tb=`<button class="tbc ${activeTag==='all'?'on':''}" onclick="setTag('all')">🗂 全部 (${vis.length})</button>`;
+    let tb=`<button class="tbc ${activeTag==='all'?'on':''}" onclick="setTag('all')">🗂 全部 (${searched.length})</button>`;
     Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([t,c])=>{
       tb+=`<button class="tbc ${activeTag===t?'on':''}" onclick="setTag('${esc(t)}')">${esc(t)} (${c})</button>`;
     });
     _tb.innerHTML=tb;
   }
 
-  // Filter & sort from same vis array
-  const _sv=document.getElementById('search');if(_sv.value.startsWith('http')){_sv.value='';document.getElementById('sc').style.display='none';}
-  const q=_sv.value.toLowerCase().trim();
+  // Grid: the same searched set the sidebar counted, narrowed by the active category
   const s=document.getElementById('sort').value;
-  let list=vis.filter(a=>{
-    const okT=activeTag==='all'||(a.tags||[]).includes(activeTag);
-    const okQ=!q||a.name.toLowerCase().includes(q)||(a.desc||'').toLowerCase().includes(q)||(a.url||'').toLowerCase().includes(q)||(a.tags||[]).some(t=>t.toLowerCase().includes(q));
-    return okT&&okQ;
-  });
+  let list=searched.filter(a=>activeTag==='all'||(a.tags||[]).includes(activeTag));
   if(s==='az')list.sort((a,b)=>a.name.localeCompare(b.name));
   else list.sort((a,b)=>b.added-a.added);
 
@@ -791,9 +806,15 @@ function saveApp(){
   err.style.display='none';
   let apps=getApps();
   const patch={url,name,emoji:selEmoji,desc:document.getElementById('fdesc').value.trim(),tags:[...tags],vis:document.getElementById('fvis').checked,dl:document.getElementById('fdl').checked};
+  let savedId=editId;
   if(editId){const i=apps.findIndex(x=>x.id===editId);if(i>=0)apps[i]={...apps[i],...patch};}
-  else apps.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),...patch,added:Date.now()});
-  setApps(apps);closeModal();render();toast(editId?`「${name}」已更新`:`「${name}」已新增`);
+  else{savedId=Date.now().toString(36)+Math.random().toString(36).slice(2,5);apps.unshift({id:savedId,...patch,added:Date.now()});}
+  setApps(apps);closeModal();
+  // The edit may have changed the App's tags, or the search still applied may not
+  // match it. If so, clear the filters: otherwise the App looks like it vanished after saving.
+  const saved=apps.find(x=>x.id===savedId);
+  if(saved&&!_isShown(saved))resetFilters();else render();
+  toast(editId?`「${name}」已更新`:`「${name}」已新增`);
 }
 
 /* ── AI ── */
@@ -928,6 +949,7 @@ function disconnectFirebase(){
 
 function _localUpdated(){return Number(localStorage.getItem(_UPD)||0)}
 function _adoptCloud(list,ts){
+  _saveBase(list);
   _cache=list;
   localStorage.setItem(_NS,JSON.stringify(list));
   localStorage.setItem(_UPD,String(ts||Date.now()));
@@ -943,6 +965,7 @@ function startSync(){
       const _d=snap.data()||{};if(_d.aiKey&&!localStorage.getItem('yal_key'))localStorage.setItem('yal_key',_d.aiKey);
       _mergeCats(_d.cats);
       const cloudApps=_d.list||[];
+      _saveBase(cloudApps);
       if(!cloudApps.length)return;
       // Only accept an incoming snapshot if it's actually newer than what we
       // already have. A blind overwrite here (the old behavior) is what let a
@@ -982,6 +1005,26 @@ async function syncFromCloud(){
 const SHRINK_GUARD_MIN_DROP=5;
 const SHRINK_GUARD_RATIO=0.5;
 
+/* ── Tag sync bookkeeping ──
+   yal_base = each App's tags as this device last saw them in the cloud. With it a
+   save can tell "tag removed here" apart from "tag added on another device". A plain
+   union (what this used to do) can't, so removed tags were written straight back. */
+function _loadBase(){try{const v=JSON.parse(localStorage.getItem('yal_base')||'{}');return v&&typeof v==='object'?v:{}}catch{return{}}}
+function _saveBase(list){
+  const b={};(list||[]).forEach(a=>{if(a&&a.id)b[a.id]=Array.isArray(a.tags)?a.tags:[]});
+  try{localStorage.setItem('yal_base',JSON.stringify(b))}catch(e){}
+}
+// base = tags at last sync, cloud = tags in the cloud now, local = tags on this device.
+//   result = (local − (base − cloud)) ∪ (cloud − base)
+// Keeps local additions, drops tags removed locally or in the cloud, keeps tags added in the cloud.
+function _mergeTags(localTags,baseTags,cloudTags){
+  const L=localTags||[],C=cloudTags||[];
+  if(!baseTags)return[...new Set([...L,...C])]; // never synced this App: fall back to union
+  const B=new Set(baseTags),CS=new Set(C);
+  const kept=L.filter(t=>!(B.has(t)&&!CS.has(t)));
+  return[...new Set([...kept,...C.filter(t=>!B.has(t))])];
+}
+
 async function pushToCloud(apps,ts,opts){
   if(!fbDb||!fbReady)return false;
   opts=opts||{};
@@ -998,20 +1041,22 @@ async function pushToCloud(apps,ts,opts){
   // erasing a category someone else just added. This is exactly why a newly
   // added tag wasn't showing up on other devices.
   if(prevData&&Array.isArray(prevData.cats)&&prevData.cats.length)_mergeCats(prevData.cats);
-  // Union each App's tags with whatever the cloud already has for that same
-  // id. A single-app edit still pushes the whole 38-item array — if this
-  // device's local copy is stale (hasn't pulled a tag another device just
-  // added to some OTHER app), that push would otherwise silently revert
-  // that tag the moment it saves anything unrelated. This only ever adds
-  // tags back in, never removes one the user just deleted here.
-  if(prevList){
+  // Merge each App's tags against the cloud copy (see _mergeTags). A single-app
+  // edit still pushes the whole list: a stale local copy must not revert a tag
+  // another device added to some OTHER app, and must not bring back a tag this
+  // device removed. An explicit restore (force) is taken exactly as given.
+  let mergedLocal=false;
+  if(prevList&&!opts.force){
+    const base=_loadBase();
     const prevById={};
     prevList.forEach(a=>{if(a&&a.id)prevById[a.id]=a;});
     apps=apps.map(a=>{
       const prev=a&&a.id?prevById[a.id]:null;
-      if(!prev||!Array.isArray(prev.tags)||!prev.tags.length)return a;
-      const merged=new Set([...(a.tags||[]),...prev.tags]);
-      return merged.size===(a.tags||[]).length?a:{...a,tags:[...merged]};
+      if(!prev)return a;
+      const tags=_mergeTags(a.tags,base[a.id],prev.tags||[]);
+      if(JSON.stringify(tags)===JSON.stringify(a.tags||[]))return a;
+      mergedLocal=true;
+      return {...a,tags};
     });
   }
   if(prevList&&!opts.force){
@@ -1038,6 +1083,9 @@ async function pushToCloud(apps,ts,opts){
     // recovery path if a bad push ever slips through the guard above.
     if(prevList&&prevList.length){payload.backupList=prevList;payload.backupUpdated=prevData.updated||null;}
     await fbDb.collection('yal').doc(_FBDOC).set(payload,{merge:true});
+    _saveBase(apps);
+    // Show the merged tags on this device too, so it matches what the cloud now holds.
+    if(mergedLocal){_cache=apps;localStorage.setItem(_NS,JSON.stringify(apps));if(role)render();}
     return true;
   }catch(e){
     console.warn('Firestore write error:',e);
@@ -1101,6 +1149,7 @@ function initFirebase(opts){
         const _d=snap.data()||{};
         _mergeCats(_d.cats);
         const list=_d.list||[];
+        _saveBase(list);
         const cloudTs=_d.updated||0;
         if(!list.length){
           // Cloud has nothing — push what we have, always with a fresh real
